@@ -27,6 +27,45 @@ def guess_buest_xdim(array):
             return 0
         else:
             return -1
+class EventPlotter:
+
+    def __init__(self, array):
+        pass
+
+
+class CategoryPlotter:
+
+    def __init__(self, array):
+        pass
+
+class ImagePlotter:
+
+    def __init__(self, array):
+        pass
+
+
+class LinePlotter:
+
+    def __init__(self, array):
+        self.array = data_array
+
+    def plot(self):
+        embed()
+        dim_count = len(array.dimensions)
+        if dim_count > 2:
+            return
+        if dim_count == 1:
+            plot_array_1d(array)
+        else:
+            plot_array_2d(array)
+            dim = guess_buest_xdim(a)
+            best_dim = a.dimensions[dim]
+        
+    def plot_array_1d(array):
+        pass
+
+    def plot_array_2d(array):
+        pass
 if __name__ == "__main__":
     dataset = "/Users/jan/zwischenlager/2018-11-05-ab-invivo-1.nix"
     explore_file(dataset)
