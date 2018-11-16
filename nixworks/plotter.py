@@ -90,22 +90,61 @@ class ImagePlotter:
 
 class LinePlotter:
 
-    def __init__(self, array):
+    def __init__(self, data_array):
         self.array = data_array
 
-    def plot(self):
-        embed()
-        dim_count = len(array.dimensions)
+    def plot(self, xdim=-1, axis=None):
+        dim_count = len(self.array.dimensions)
         if dim_count > 2:
             return
         if dim_count == 1:
-            plot_array_1d(array)
+            return self.plot_array_1d(axis)
         else:
-            plot_array_2d(array)
-            dim = guess_buest_xdim(a)
-            best_dim = a.dimensions[dim]
-        
-    def plot_array_1d(array):
+            return self.plot_array_2d(axis)
+
+    def plot_array_1d(self, axis=None):
+        if axis is None:
+            fig = plt.figure()
+            axis = fig.add_subplot(111)
+        data = self.array[:]
+        dim = self.array.dimensions[0]
+        x = dim.axis(len(data))
+        xlabel = dim.label + ("" if dim.unit is None else " [%s]" % (dim.unit))
+        ylabel = self.array.label + ("" if self.array.unit is None else " [%s]" % (self.array.unit))
+        axis.plot(x, data)
+        axis.set_xlabel(xlabel)
+        axis.set_ylabel(ylabel)
+        return axis
+
+    def plot_array_2d(self, xdim=None, axis=None):
+        if axis is None:
+            fig = plt.figure()
+            axis = fig.add_subplot(111)
+        if xdim is None:
+            xdim = guess_buest_xdim(self.array)
+        elif xdim > 2:
+            raise ValueError("LinePlotter: xdim is larger than 2! Cannot plot that kind of data")
+
+        data = self.array[:]
+        x_dimension = self.array.dimensions[xdim]
+        x = x_dimension.axis(data.shape[xdim])
+        xlabel = x_dimension.label + ("" if x_dimension.unit is None else " [%s]" % (x_dimension.unit))
+        ylabel = self.array.label + ("" if self.array.unit is None else " [%s]" % (self.array.unit))
+        y_dimension = self.array.dimensions[1-xdim]
+        labels = y_dimension.labels
+        if len(labels) == 0:
+            labels =list(map(str, range(self.array.shape[1-xdim])))
+        print(labels)
+        if xdim == 1:
+            data = data.T
+        for i, l in enumerate(labels):
+            axis.plot(x, data[:, i], label=l)
+        axis.set_xlabel(xlabel)
+        axis.set_ylabel(ylabel)
+        axis.legend(loc=1)
+        return axis
+
+
         pass
 
     def plot_array_2d(array):
