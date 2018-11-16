@@ -146,6 +146,24 @@ class LinePlotter:
 
 
         pass
+def create_test_data():
+    filename = "test.nix"
+    f = nix.File.open(filename, nix.FileMode.Overwrite)
+    b = f.create_block("test","test")
+    data = np.zeros((10000,5))
+    time = np.arange(10000) * 0.001
+    for i in range(5):
+        data[:,i] = np.sin(2*np.pi*time+np.random.randn(1)*np.pi)
+    da = b.create_data_array("2d sampled-set", "test", data=data, dtype=nix.DataType.Double)
+    da.label = "voltage"
+    da.unit = "mV"
+    da.append_sampled_dimension(0.001)
+    da.append_set_dimension()
+    da.dimensions[0].unit = "s"
+    da.dimensions[0].label = "time"
+    f.close()
+    return filename
+
 
     def plot_array_2d(array):
         pass
