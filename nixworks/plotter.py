@@ -11,8 +11,8 @@ def guess_buest_xdim(array):
     if len(data_extent) == 1:
         return 0
 
-    d1 = a.dimensions[0]
-    d2 = a.dimensions[1]
+    d1 = array.dimensions[0]
+    d2 = array.dimensions[1]
 
     if d1.dimension_type == nix.DimensionType.Sample:
         return 0
@@ -27,6 +27,7 @@ def guess_buest_xdim(array):
             return 0
         else:
             return -1
+
 
 def suggested_plotter(array):
     if len(array.dimensions) > 2:
