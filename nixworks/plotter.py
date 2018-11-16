@@ -27,6 +27,49 @@ def guess_buest_xdim(array):
             return 0
         else:
             return -1
+
+def suggested_plotter(array):
+    if len(array.dimensions) > 2:
+        print("cannot handle more than 2D")
+        return None
+    dim_types = [d.dimension_type for d in array.dimensions]
+    dim_count = len(dim_types)
+    if dim_count == 1:
+        if dim_types[0] == nix.DimensionType.Sample:
+            return LinePlotter(array)
+        elif dim_types[0] == nix.DimensionType.Range:
+            if array.dimensions[0].is_alias:
+                return EventPlotter(array)
+            else:
+                return LinePlotter(array)
+        elif dim_types[0] == nix.DimensionType.Set:
+            return CategoryPlotter(array)
+        else:
+            return None
+    else:
+        if dim_types[0] == nix.DimensionType.Sample:
+            if dim_types[1] == nix.DimensionType.Sample or \
+               dim_types[1] == nix.DimensionType.Range:
+                return ImagePlotter(array)
+            else:
+                return LinePlotter(array)
+        elif dim_types[0] == nix.DimensionType.Range:
+            if dim_types[1] == nix.DimensionType.Sample or \
+               dim_types[1] == nix.DimensionType.Range:
+                return ImagePlotter(array)
+            else:
+                return LinePlotter(array)
+        elif dim_types[0] == nix.DimensionType.Set:
+            if dim_types[1] == nix.DimensionType.Sample or \
+               dim_types[1] == nix.DimensionType.Range:
+                return LinePlotter(array)
+            else:
+                return CategoryPlotter(array)
+        else:
+            print("Sorry, not a supported combination of dimensions!")
+            return None
+
+
 class EventPlotter:
 
     def __init__(self, array):
