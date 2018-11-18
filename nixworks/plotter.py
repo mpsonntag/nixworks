@@ -101,8 +101,15 @@ class ImagePlotter:
 
 class LinePlotter:
 
-    def __init__(self, data_array):
+    def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.dim_count = len(data_array.dimensions)
+        if xdim == -1:
+            self.xdim = guess_buest_xdim(self.array)
+        elif xdim > 2:
+            raise ValueError("LinePlotter: xdim is larger than 2! Cannot plot that kind of data")
+        else:
+            self.xdim = xdim
 
     def plot(self, xdim=-1, axis=None):
         dim_count = len(self.array.dimensions)
