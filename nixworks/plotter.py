@@ -120,8 +120,8 @@ class LinePlotter:
         data = self.array[:]
         dim = self.array.dimensions[0]
         x = dim.axis(len(data))
-        xlabel = dim.label + ("" if dim.unit is None else " [%s]" % (dim.unit))
-        ylabel = self.array.label + ("" if self.array.unit is None else " [%s]" % (self.array.unit))
+        xlabel = create_label(dim)
+        ylabel = create_label(self.array)
         axis.plot(x, data)
         axis.set_xlabel(xlabel)
         axis.set_ylabel(ylabel)
@@ -139,8 +139,8 @@ class LinePlotter:
         data = self.array[:]
         x_dimension = self.array.dimensions[xdim]
         x = x_dimension.axis(data.shape[xdim])
-        xlabel = x_dimension.label + ("" if x_dimension.unit is None else " [%s]" % (x_dimension.unit))
-        ylabel = self.array.label + ("" if self.array.unit is None else " [%s]" % (self.array.unit))
+        xlabel = create_label(x_dimension)
+        ylabel = create_label(self.array)
         y_dimension = self.array.dimensions[1-xdim]
         labels = y_dimension.labels
         if len(labels) == 0:
