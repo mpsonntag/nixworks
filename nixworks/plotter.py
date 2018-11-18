@@ -1,6 +1,8 @@
 import nixio as nix
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+
 from IPython import embed
 
 
@@ -103,6 +105,7 @@ class LinePlotter:
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.lines = []
         self.dim_count = len(data_array.dimensions)
         if xdim == -1:
             self.xdim = guess_buest_xdim(self.array)
@@ -111,56 +114,102 @@ class LinePlotter:
         else:
             self.xdim = xdim
 
-    def plot(self, xdim=-1, axis=None):
+    def plot(self, axis=None, maxpoints=100000):
+        self.maxpoints = maxpoints
+        if axis is None:
+            self.fig = plt.figure()
+            self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
+            self.__add_slider()
         dim_count = len(self.array.dimensions)
         if dim_count > 2:
             return
         if dim_count == 1:
-            return self.plot_array_1d(axis)
+            return self.plot_array_1d()
         else:
-            return self.plot_array_2d(axis)
+            return self.plot_array_2d()
 
-    def plot_array_1d(self, axis=None):
-        if axis is None:
-            fig = plt.figure()
-            axis = fig.add_subplot(111)
-        data = self.array[:]
-        dim = self.array.dimensions[0]
-        x = dim.axis(len(data))
-        xlabel = create_label(dim)
-        ylabel = create_label(self.array)
-        axis.plot(x, data)
-        axis.set_xlabel(xlabel)
-        axis.set_ylabel(ylabel)
-        return axis
+    def __add_slider(self):
+        steps = self.array.shape[self.xdim] / self.maxpoints
+        slider_ax = self.fig.add_axes([0.15, 0.025, 0.8, 0.025])
+        self.slider = Slider(slider_ax, 'Slider', 1., steps, valinit=1., valstep=0.25)
+        self.slider.on_changed(self.__update)
 
-    def plot_array_2d(self, xdim=None, axis=None):
-        if axis is None:
-            fig = plt.figure()
-            axis = fig.add_subplot(111)
-        if xdim is None:
-            xdim = guess_buest_xdim(self.array)
-        elif xdim > 2:
-            raise ValueError("LinePlotter: xdim is larger than 2! Cannot plot that kind of data")
+    def __update(self, val):
+        if len(self.lines) > 0:
+            minimum = val * self.maxpoints - self.maxpoints
+            start = minimum if minimum > 0 else 0
+            end = val * self.maxpoints
+            self.__draw(start, end)
+        self.fig.canvas.draw_idle()
 
-        data = self.array[:]
-        x_dimension = self.array.dimensions[xdim]
-        x = x_dimension.axis(data.shape[xdim])
-        xlabel = create_label(x_dimension)
-        ylabel = create_label(self.array)
-        y_dimension = self.array.dimensions[1-xdim]
+    def __draw(self, start, end):
+        if self.dim_count == 1:
+            self.__draw_1d(start, end)
+        else:
+            self.__draw_2d(start, end)
+
+    def __draw_1d(self, start, end):
+        if start < 0:
+            start = 0
+        if end > self.array.shape[self.xdim]:
+            end = self.array.shape[self.xdim]
+
+        y = self.array[int(start):int(end)]
+        x = np.asarray(self.array.dimensions[self.xdim].axis(len(y), int(start)))
+
+        if len(self.lines) == 0:
+            self.lines.extend(self.axis.plot(x, y))
+        else:
+            self.lines[0].set_ydata(y)
+            self.lines[0].set_xdata(x)
+
+        self.axis.set_xlim([x[0], x[-1]])
+
+    def __draw_2d(self, start, end):
+        if start < 0:
+            start = 0
+        if end > self.array.shape[self.xdim]:
+            end = self.array.shape[self.xdim]
+
+        x_dimension = self.array.dimensions[self.xdim]
+        x = np.asarray(x_dimension.axis(int(end-start), start))
+        y_dimension = self.array.dimensions[1-self.xdim]
         labels = y_dimension.labels
         if len(labels) == 0:
-            labels =list(map(str, range(self.array.shape[1-xdim])))
-        print(labels)
-        if xdim == 1:
-            data = data.T
+            labels =list(map(str, range(self.array.shape[1-self.xdim])))
+
         for i, l in enumerate(labels):
-            axis.plot(x, data[:, i], label=l)
-        axis.set_xlabel(xlabel)
-        axis.set_ylabel(ylabel)
-        axis.legend(loc=1)
-        return axis
+            if (self.xdim == 0):
+                y = self.array[int(start):int(end), i]
+            else:
+                y = self.array[i, int(start):int(end)]
+
+            if len(self.lines) <= i:
+                self.lines.extend(self.axis.plot(x, y, label=l))
+            else:
+                self.lines[i].set_ydata(y)
+                self.lines[i].set_xdata(x)
+
+        self.axis.set_xlim([x[0], x[-1]])
+
+    def plot_array_1d(self):
+        self.__draw_1d(0, self.maxpoints)
+        xlabel = create_label(self.array.dimensions[self.xdim])
+        ylabel = create_label(self.array)
+        self.axis.set_xlabel(xlabel)
+        self.axis.set_ylabel(ylabel)
+        return self.axis
+
+    def plot_array_2d(self):
+        self.__draw_2d(0, self.maxpoints)
+        xlabel = create_label(self.array.dimensions[self.xdim])
+        ylabel = create_label(self.array)
+        self.axis.set_xlabel(xlabel)
+        self.axis.set_ylabel(ylabel)
+        self.axis.legend(loc=1)
+        return self.axis
+
+
 
 
         pass
@@ -187,7 +236,6 @@ def create_test_data():
     da2 = b.create_data_array("long 1d data", "test", dtype=nix.DataType.Double, data=data)
     da2.label = "intensity"
     da2.unit = "V"
-    sd = a2.append_sampled_dimension(dt)
     sd.label = "time"
     sd.unit = "s"
 
