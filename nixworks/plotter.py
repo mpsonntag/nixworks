@@ -71,6 +71,17 @@ def suggested_plotter(array):
             return None
 
 
+def create_label(entity):
+    label = ""
+    if hasattr(entity, "label"):
+        label += (entity.label if entity.label is not None else "")
+        if len(label) == 0 and  hasattr(entity, "name"):
+            label += entity.name
+    if hasattr(entity, "unit") and entity.unit is not None:
+        label += " [%s]" % entity.unit
+    return label
+
+
 class EventPlotter:
 
     def __init__(self, array):
