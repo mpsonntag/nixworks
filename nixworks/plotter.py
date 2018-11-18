@@ -232,10 +232,11 @@ def create_test_data():
     da.dimensions[0].label = "time"
 
     time = np.arange(500000) * dt
-    data = np.random.randn(len(time)) * 0.1 + np.sin(2*np.pi*time))
+    data = np.random.randn(len(time)) * 0.1 + np.sin(2*np.pi*time) * (np.sin(2 * np.pi * time * 0.0125) * 0.2)
     da2 = b.create_data_array("long 1d data", "test", dtype=nix.DataType.Double, data=data)
     da2.label = "intensity"
     da2.unit = "V"
+    sd = da2.append_sampled_dimension(dt)
     sd.label = "time"
     sd.unit = "s"
 
@@ -249,3 +250,18 @@ if __name__ == "__main__":
     dataset = "/Users/jan/zwischenlager/2018-11-05-ab-invivo-1.nix"
     explore_file(dataset)
     explore_block
+    filename = create_test_data()
+    f = nix.File.open(filename, nix.FileMode.ReadWrite)
+    b = f.blocks[0]
+    a = b.data_arrays[0]
+    p = suggested_plotter(a)
+    p.plot(maxpoints=5000)
+    plt.show()
+
+    a2 = b.data_arrays[1]
+    p = suggested_plotter(a2)
+    p.plot()
+    plt.show()
+
+    embed()
+    f.close()
