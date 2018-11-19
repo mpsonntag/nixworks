@@ -400,15 +400,9 @@ if __name__ == "__main__":
     filename = create_test_data()
     f = nix.File.open(filename, nix.FileMode.ReadWrite)
     b = f.blocks[0]
-    a = b.data_arrays[0]
-    p = suggested_plotter(a)
-    p.plot(maxpoints=5000)
-    plt.show()
-
-    a2 = b.data_arrays[1]
-    p = suggested_plotter(a2)
-    p.plot()
-    plt.show()
-
+    for da in b.data_arrays:
+        p = suggested_plotter(da)
+        p.plot()
+        plt.show()
     embed()
     f.close()
