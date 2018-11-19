@@ -124,8 +124,63 @@ class EventPlotter:
 
 class CategoryPlotter:
 
-    def __init__(self, array):
-        pass
+    def __init__(self, data_array, xdim=-1):
+        self.array = data_array
+        if xdim == -1:
+            self.xdim = guess_buest_xdim(self.array)
+        elif xdim > 2:
+            raise ValueError("CategoryPlotter: xdim is larger than 2! Cannot plot that kind of data")
+        else:
+            self.xdim = xdim
+
+    def plot(self, axis=None):
+        if axis is None:
+            self.fig = plt.figure()
+            self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
+        if len(self.array.dimensions) == 1:
+            return self.plot_1d()
+        elif len(self.array.dimensions) == 2:
+            return self.plot_2d()
+        else:
+            return None
+
+    def plot_1d(self):
+        data = self.array[:]
+        if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Set:
+            categories = list(self.array.dimensions[self.xdim].labels)
+        else:
+            return None
+        if categories is None:
+            categories = ["Cat-%i"%i for i in range(len(data))]
+        ylabel = create_label(self.array)
+        self.axis.bar(range(1, len(categories)+1), data, tick_label=categories)
+        self.axis.set_ylabel(ylabel)
+        return self.axis
+
+    def plot_2d(self):
+        data = self.array[:]
+        if self.xdim == 1:
+            data = data.T
+        print(self.xdim)
+        if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Set:
+            categories = list(self.array.dimensions[self.xdim].labels)
+        print(categories)
+        if len(categories) == 0:
+            categories = ["Cat-%i"%i for i in range(data.shape[self.xdim])]
+        series_names = list(self.array.dimensions[1-self.xdim].labels)
+        if len(series_names) == 0:
+            series_names = ["Series-%i"%i for i in range(data.shape[1-self.xdim])]
+        bar_width = 1/data.shape[1] * 0.75
+        bars = []
+        for i in range(data.shape[1]):
+            x_values = np.arange(data.shape[0]) +  i * bar_width
+            bars.append(self.axis.bar(x_values, data[:,i], width=bar_width, align="center")[0])
+        self.axis.set_xticks(np.arange(data.shape[0]) + data.shape[1] * bar_width/2)
+        self.axis.set_xticklabels(categories)
+        print(series_names)
+        self.axis.legend(bars, series_names, loc=1)
+        return self.axis
+
 
 class ImagePlotter:
 
