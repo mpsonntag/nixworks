@@ -28,7 +28,7 @@ def guess_buest_xdim(array):
              (d2.dimension_type == nix.DimensionType.Set):
             return 0
         else:
-            return -1
+            return 0
 
 
 def suggested_plotter(array):
