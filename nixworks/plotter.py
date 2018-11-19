@@ -306,7 +306,32 @@ def create_test_data():
     labels = ["V-1", "V-2", "V-3", "V-4", "V-5"]
     sd = range_recordings.append_set_dimension()
     sd.labels = labels
-    
+
+    # 1-d category
+    months = np.arange(0.,12.,1.)
+    temperatures = np.sin(np.pi * 2 * months/12 + 7) * 25.
+    labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", \
+              "Oct", "Nov","Dec"]
+    set_data = b.create_data_array("1d set", "test", dtype=nix.DataType.Double, \
+                                   data=temperatures)
+    set_data.label = "temperature"
+    set_data.unit = "K"
+    sd = set_data.append_set_dimension()
+    sd.labels = labels
+
+    # 2-d category
+    places = ["A", "B", "C"]
+    values = np.zeros((len(months), len(places)))
+    for i in range(len(places)):
+        values[:, i] = temperatures - 30 + i * 15
+    sets_da = b.create_data_array("2d set data", "test", \
+                                  dtype=nix.DataType.Double, \
+                                  data=values)
+    sd = sets_da.append_set_dimension()
+    sd.labels = labels
+    sd = sets_da.append_set_dimension()
+    sd.labels = places
+
     f.close()
     return filename
 
