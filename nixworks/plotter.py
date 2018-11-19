@@ -251,6 +251,8 @@ def create_test_data():
 
     f = nix.File.open(filename, nix.FileMode.Overwrite)
     b = f.create_block("test","test")
+
+    # 2-D sample - set data
     data = np.zeros((10000,5))
     time = np.arange(10000) * dt
     for i in range(5):
@@ -263,6 +265,7 @@ def create_test_data():
     da.dimensions[0].unit = "s"
     da.dimensions[0].label = "time"
 
+    # 1-D sampled data
     time = np.arange(500000) * dt
     data = np.random.randn(len(time)) * 0.1 + np.sin(2*np.pi*time) * (np.sin(2 * np.pi * time * 0.0125) * 0.2)
     da2 = b.create_data_array("long 1d data", "test", dtype=nix.DataType.Double, data=data)
@@ -272,6 +275,38 @@ def create_test_data():
     sd.label = "time"
     sd.unit = "s"
 
+    # 1-D (alias) range event data
+    times = np.linspace(0.0, 10., 25)
+    times = times + np.random.randn(len(times)) * 0.05
+    alias_range_da = b.create_data_array("1d event data", "test", \
+                                         dtype=nix.DataType.Double, data=times)
+    alias_range_da.append_alias_range_dimension()
+    alias_range_da.label = "time"
+    alias_range_da.unit = "ms"
+
+    # 1-D range event data
+    values = np.sin(np.pi * 2 * times/2)
+    range_da = b.create_data_array("1-d range data", "test", \
+                                   dtype=nix.DataType.Double, data=values)
+    range_da.unit = "mV"
+    range_da.label = "voltage"
+    rd = range_da.append_range_dimension(times)
+    rd.label = "time"
+    rd.unit = "s"
+
+    # 2-D range-set event data
+    values = np.random.randn(len(times), 5)
+    for i in range(5):
+        values[:, i] += np.linspace(0.0, 3.0 * i, len(times))
+    range_recordings = b.create_data_array("2d range data", "test", \
+                                           dtype=nix.DataType.Double, data=values)
+    rd = range_recordings.append_range_dimension(times)
+    rd.unit = "s"
+    rd.label = "time"
+    labels = ["V-1", "V-2", "V-3", "V-4", "V-5"]
+    sd = range_recordings.append_set_dimension()
+    sd.labels = labels
+    
     f.close()
     return filename
 
