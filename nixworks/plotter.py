@@ -161,15 +161,17 @@ class CategoryPlotter:
         data = self.array[:]
         if self.xdim == 1:
             data = data.T
-        print(self.xdim)
+
         if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Set:
             categories = list(self.array.dimensions[self.xdim].labels)
-        print(categories)
         if len(categories) == 0:
             categories = ["Cat-%i"%i for i in range(data.shape[self.xdim])]
-        series_names = list(self.array.dimensions[1-self.xdim].labels)
+
+        if self.array.dimensions[1-self.xdim].dimension_type == nix.DimensionType.Set:
+            series_names = list(self.array.dimensions[1-self.xdim].labels)
         if len(series_names) == 0:
             series_names = ["Series-%i"%i for i in range(data.shape[1-self.xdim])]
+
         bar_width = 1/data.shape[1] * 0.75
         bars = []
         for i in range(data.shape[1]):
@@ -177,7 +179,6 @@ class CategoryPlotter:
             bars.append(self.axis.bar(x_values, data[:,i], width=bar_width, align="center")[0])
         self.axis.set_xticks(np.arange(data.shape[0]) + data.shape[1] * bar_width/2)
         self.axis.set_xticklabels(categories)
-        print(series_names)
         self.axis.legend(bars, series_names, loc=1)
         return self.axis
 
