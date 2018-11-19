@@ -86,8 +86,40 @@ def create_label(entity):
 
 class EventPlotter:
 
-    def __init__(self, array):
-        pass
+    def __init__(self, data_array, xdim=-1):
+        self.array = data_array
+        self.dim_count = len(data_array.dimensions)
+        if xdim == -1:
+            self.xdim = guess_buest_xdim(self.array)
+        elif xdim > 1:
+            raise ValueError("EventPlotter: xdim is larger than 2! Cannot plot that kind of data")
+        else:
+            self.xdim = xdim
+
+    def plot(self, axis=None):
+        if axis is None:
+            self.fig = plt.figure(figsize=[5.5, 2.])
+            self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
+        if len(self.array.dimensions) == 1:
+            return self.plot_1d()
+        else:
+            return None
+
+    def plot_1d(self):
+        data = self.array[:]
+        xlabel = create_label(self.array.dimensions[self.xdim])
+        if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Range and \
+           not self.array.dimensions[self.xdim].is_alias:
+            ylabel = create_label(self.array)
+        else:
+            ylabel = ""
+        self.axis.scatter(data, np.ones(data.shape))
+        self.axis.set_ylim([0.5, 1.5])
+        self.axis.set_yticks([1.])
+        self.axis.set_yticklabels([])
+        self.axis.set_xlabel(xlabel)
+        self.axis.set_ylabel(ylabel)
+        return self.axis
 
 
 class CategoryPlotter:
