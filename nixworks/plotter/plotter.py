@@ -189,8 +189,39 @@ class CategoryPlotter:
 
 class ImagePlotter:
 
-    def __init__(self, array, xdim=-1):
-        pass
+    def __init__(self, data_array, xdim=-1):
+        self.array = data_array
+
+    def plot(self, axis=None):
+        dim_count  = len(self.array.dimensions)
+        if axis is None:
+            self.fig = plt.figure()
+            self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
+            self.axis.set_title(self.array.name)
+        if dim_count == 2:
+            return self.plot_2d()
+        elif dim_count == 3:
+            return self.plot_3d()
+        else:
+            return None
+
+    def plot_2d(self):
+        data = self.array[:]
+        x = self.array.dimensions[0].axis(data.shape[0])
+        y = self.array.dimensions[1].axis(data.shape[1])
+        xlabel = create_label(self.array.dimensions[0])
+        ylabel = create_label(self.array.dimensions[1])
+        self.axis.imshow(data, extent=[x[0], x[-1], y[0], y[-1]])
+        self.axis.set_xlabel(xlabel)
+        self.axis.set_ylabel(ylabel)
+        self.axis.set
+        return self.axis
+
+    def plot_3d(self):
+        if self.array.shape[2] > 3:
+            print("cannot plot 3d data with more than 3 channels in the third dim")
+            return None
+        return self.plot_2d()
 
 
 class LinePlotter:
