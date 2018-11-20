@@ -1,7 +1,9 @@
 import nixio as nix
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import multivariate_normal
 from matplotlib.widgets import Slider
+from PIL import Image as img
 
 from IPython import embed
 
@@ -425,6 +427,37 @@ def create_test_data():
     sd = sets_da.append_set_dimension()
     sd.labels = places
 
+    # 3-d image data
+    image = img.open('../test/lena.bmp')
+    img_data = np.array(image)
+    channels = list(image.mode)
+    image_da = b.create_data_array("lena", "nix.image.rgb", data=img_data)
+    # add descriptors for width, height and channels
+    height_dim = image_da.append_sampled_dimension(1)
+    height_dim.label = "height"
+    width_dim = image_da.append_sampled_dimension(1)
+    width_dim.label = "width"
+    color_dim = image_da.append_set_dimension()
+    color_dim.labels = channels
+
+    # 2D sampled data
+    delta = 0.025
+    x = y = np.arange(-3.0, 3.0, delta)
+    X, Y = np.meshgrid(x, y)
+    pos = np.dstack((X, Y))
+    rv1 = multivariate_normal([0.5, -0.2], [[2.0, 0.3], [0.3, 0.5]])
+    rv2 = multivariate_normal([0.5, -0.2], [[1.0, 1.7], [0.5, 0.5]])
+    z1 = rv1.pdf(pos)
+    z2 = rv2.pdf(pos)
+    z = z1 - z2
+
+    da = b.create_data_array("difference of Gaussians", "nix.2d.heatmap", data=z)
+    d1 = da.append_sampled_dimension(delta)
+    d1.label = "x"
+    d1.offset = -3.
+    d2 = da.append_sampled_dimension(delta)
+    d2.label = "y"
+    d2.offset = -3.
     f.close()
     return filename
 
