@@ -102,6 +102,7 @@ class EventPlotter:
         if axis is None:
             self.fig = plt.figure(figsize=[5.5, 2.])
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
+            self.axis.set_title(self.array.name)
         if len(self.array.dimensions) == 1:
             return self.plot_1d()
         else:
@@ -139,6 +140,7 @@ class CategoryPlotter:
         if axis is None:
             self.fig = plt.figure()
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
+            self.axis.set_title(self.array.name)
         if len(self.array.dimensions) == 1:
             return self.plot_1d()
         elif len(self.array.dimensions) == 2:
@@ -209,7 +211,9 @@ class LinePlotter:
         if axis is None:
             self.fig = plt.figure()
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
+            self.axis.set_title(self.array.name)
             self.__add_slider()
+
         dim_count = len(self.array.dimensions)
         if dim_count > 2:
             return
