@@ -185,7 +185,7 @@ class CategoryPlotter:
 
 class ImagePlotter:
 
-    def __init__(self, array):
+    def __init__(self, array, xdim=-1):
         pass
 
 
@@ -298,9 +298,46 @@ class LinePlotter:
         return self.axis
 
 
+def explore_file(dataset):
+    f = nix.File.open(dataset, nix.FileMode.ReadOnly)
+    for b in f.blocks:
+        explore_block(b)
+    f.close()
 
 
+def explore_block(block):
+    plot_array(block.data_arrays["V-1"])
+    return
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    arrays = {}
+    for a in block.data_arrays:
+        dim = guess_buest_xdim(a)
+        best_dim = a.dimensions[dim]
+
+        if dim > -1 and  best_dim.dimension_type != nix.DimensionType.Set:
+            if best_dim.dimension_type == nix.DimensionType.Sample:
+                start = best_dim.position_at(0)
+                end = best_dim.position_at(a.data_extent[dim]-1)
+            elif best_dim.dimension_type == nix.DimensionType.Range:
+                start = best_dim.tick_at(0)
+                end = best_dim.tick_at(a.data_extent[dim]-1)
+            arrays[a.name] = [(start, end)]
+
+
+    for i, a in enumerate(arrays):
+        ax.plot([arrays[a][0][0], arrays[a][0][1]], [i, i], lw=2.)
+
+    tags = {}
+    for t in block.tags:
+        if len(t.references) == 0:
+            continue
+        dim = guess_buest_xdim(t.references[0])
+        tags[t.name] = [(tag.position[dim])]
         pass
+    plt.show()
+
+
 def create_test_data():
     filename = "test.nix"
     dt = 0.001
@@ -392,12 +429,11 @@ def create_test_data():
     return filename
 
 
-    def plot_array_2d(array):
-        pass
 if __name__ == "__main__":
-    dataset = "/Users/jan/zwischenlager/2018-11-05-ab-invivo-1.nix"
-    explore_file(dataset)
-    explore_block
+    #dataset = "/Users/jan/zwischenlager/2018-11-05-ab-invivo-1.nix"
+    #explore_file(dataset)
+    #explore_block
+
     filename = create_test_data()
     f = nix.File.open(filename, nix.FileMode.ReadWrite)
     b = f.blocks[0]
