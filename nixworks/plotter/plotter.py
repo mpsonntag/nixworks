@@ -34,8 +34,8 @@ def guess_buest_xdim(array):
 
 
 def suggested_plotter(array):
-    if len(array.dimensions) > 2:
-        print("cannot handle more than 2D")
+    if len(array.dimensions) > 3:
+        print("cannot handle more than 3D")
         return None
     dim_types = [d.dimension_type for d in array.dimensions]
     dim_count = len(dim_types)
@@ -51,7 +51,7 @@ def suggested_plotter(array):
             return CategoryPlotter(array)
         else:
             return None
-    else:
+    elif dim_count == 2:
         if dim_types[0] == nix.DimensionType.Sample:
             if dim_types[1] == nix.DimensionType.Sample or \
                dim_types[1] == nix.DimensionType.Range:
@@ -73,6 +73,10 @@ def suggested_plotter(array):
         else:
             print("Sorry, not a supported combination of dimensions!")
             return None
+    elif dim_count == 3:
+        return ImagePlotter(array)
+    else:
+        return None
 
 
 def create_label(entity):
