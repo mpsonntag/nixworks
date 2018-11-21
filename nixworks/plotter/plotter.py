@@ -392,7 +392,7 @@ if __name__ == "__main__":
     b = f.blocks[0]
     for da in b.data_arrays:
         p = suggested_plotter(da)
-        p.plot()
-        plt.show()
-    embed()
+        if p is not None:
+            p.plot()
+            plt.show()
     f.close()
