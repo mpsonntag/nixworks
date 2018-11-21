@@ -1,7 +1,6 @@
 import nixio as nix
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import multivariate_normal
 from matplotlib.widgets import Slider
 from PIL import Image as img
 
@@ -379,135 +378,7 @@ def explore_block(block):
     plt.show()
 
 
-def create_test_data():
-    filename = "test.nix"
-    dt = 0.001
-
-    f = nix.File.open(filename, nix.FileMode.Overwrite)
-    b = f.create_block("test","test")
-
-    # 2-D sample - set data
-    data = np.zeros((10000,5))
-    time = np.arange(10000) * dt
-    for i in range(5):
-        data[:,i] = np.sin(2*np.pi*time+np.random.randn(1)*np.pi)
-    da = b.create_data_array("2d sampled-set", "test", data=data, dtype=nix.DataType.Double)
-    da.label = "voltage"
-    da.unit = "mV"
-    da.append_sampled_dimension(dt)
-    da.append_set_dimension()
-    da.dimensions[0].unit = "s"
-    da.dimensions[0].label = "time"
-
-    # 1-D sampled data
-    time = np.arange(500000) * dt
-    data = np.random.randn(len(time)) * 0.1 + np.sin(2*np.pi*time) * (np.sin(2 * np.pi * time * 0.0125) * 0.2)
-    da2 = b.create_data_array("long 1d data", "test", dtype=nix.DataType.Double, data=data)
-    da2.label = "intensity"
-    da2.unit = "V"
-    sd = da2.append_sampled_dimension(dt)
-    sd.label = "time"
-    sd.unit = "s"
-
-    # 1-D (alias) range event data
-    times = np.linspace(0.0, 10., 25)
-    times = times + np.random.randn(len(times)) * 0.05
-    alias_range_da = b.create_data_array("1d event data", "test", \
-                                         dtype=nix.DataType.Double, data=times)
-    alias_range_da.append_alias_range_dimension()
-    alias_range_da.label = "time"
-    alias_range_da.unit = "ms"
-
-    # 1-D range event data
-    values = np.sin(np.pi * 2 * times/2)
-    range_da = b.create_data_array("1-d range data", "test", \
-                                   dtype=nix.DataType.Double, data=values)
-    range_da.unit = "mV"
-    range_da.label = "voltage"
-    rd = range_da.append_range_dimension(times)
-    rd.label = "time"
-    rd.unit = "s"
-
-    # 2-D range-set event data
-    values = np.random.randn(len(times), 5)
-    for i in range(5):
-        values[:, i] += np.linspace(0.0, 3.0 * i, len(times))
-    range_recordings = b.create_data_array("2d range data", "test", \
-                                           dtype=nix.DataType.Double, data=values)
-    rd = range_recordings.append_range_dimension(times)
-    rd.unit = "s"
-    rd.label = "time"
-    labels = ["V-1", "V-2", "V-3", "V-4", "V-5"]
-    sd = range_recordings.append_set_dimension()
-    sd.labels = labels
-
-    # 1-d category
-    months = np.arange(0.,12.,1.)
-    temperatures = np.sin(np.pi * 2 * months/12 + 7) * 25.
-    labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", \
-              "Oct", "Nov","Dec"]
-    set_data = b.create_data_array("1d set", "test", dtype=nix.DataType.Double, \
-                                   data=temperatures)
-    set_data.label = "temperature"
-    set_data.unit = "K"
-    sd = set_data.append_set_dimension()
-    sd.labels = labels
-
-    # 2-d category
-    places = ["A", "B", "C"]
-    values = np.zeros((len(months), len(places)))
-    for i in range(len(places)):
-        values[:, i] = temperatures - 30 + i * 15
-    sets_da = b.create_data_array("2d set data", "test", \
-                                  dtype=nix.DataType.Double, \
-                                  data=values)
-    sd = sets_da.append_set_dimension()
-    sd.labels = labels
-    sd = sets_da.append_set_dimension()
-    sd.labels = places
-
-    # 3-d image data
-    image = img.open('../test/lena.bmp')
-    img_data = np.array(image)
-    channels = list(image.mode)
-    image_da = b.create_data_array("lena", "nix.image.rgb", data=img_data)
-    # add descriptors for width, height and channels
-    height_dim = image_da.append_sampled_dimension(1)
-    height_dim.label = "height"
-    width_dim = image_da.append_sampled_dimension(1)
-    width_dim.label = "width"
-    color_dim = image_da.append_set_dimension()
-    color_dim.labels = channels
-
-    # 2D sampled data
-    delta = 0.025
-    x = y = np.arange(-3.0, 3.0, delta)
-    X, Y = np.meshgrid(x, y)
-    pos = np.dstack((X, Y))
-    rv1 = multivariate_normal([0.5, -0.2], [[2.0, 0.3], [0.3, 0.5]])
-    rv2 = multivariate_normal([0.5, -0.2], [[1.0, 1.7], [0.5, 0.5]])
-    z1 = rv1.pdf(pos)
-    z2 = rv2.pdf(pos)
-    z = z1 - z2
-
-    da = b.create_data_array("difference of Gaussians", "nix.2d.heatmap", data=z)
-    d1 = da.append_sampled_dimension(delta)
-    d1.label = "x"
-    d1.offset = -3.
-    d2 = da.append_sampled_dimension(delta)
-    d2.label = "y"
-    d2.offset = -3.
-    f.close()
-    return filename
-
-
 if __name__ == "__main__":
-    #dataset = "/Users/jan/zwischenlager/2018-11-05-ab-invivo-1.nix"
-    #explore_file(dataset)
-    #explore_block
-
-    filename = create_test_data()
-    f = nix.File.open(filename, nix.FileMode.ReadWrite)
     b = f.blocks[0]
     for da in b.data_arrays:
         p = suggested_plotter(da)
