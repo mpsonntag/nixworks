@@ -1,3 +1,4 @@
+import os
 import nixio as nix
 import numpy as np
 import matplotlib.pyplot as plt
@@ -379,6 +380,15 @@ def explore_block(block):
 
 
 if __name__ == "__main__":
+    testfile = os.path.join("..", "test", "test.nix")
+    if not os.path.exists(testfile):
+        cwd = os.curdir
+        import subprocess
+        os.chdir("../test")
+        subprocess.check_call(["python", "create_testfile.py"])
+        os.chdir(cwd)
+
+    f = nix.File.open(testfile, nix.FileMode.ReadWrite)
     b = f.blocks[0]
     for da in b.data_arrays:
         p = suggested_plotter(da)
