@@ -31,40 +31,36 @@ def line_interact(da):
     interact(update, val=(0,2.0));
 
 
-def _plot_block(blk):
+def _plot_block(blk, da_idx=None, x_unit='s'):
     # Plot all DataArrays, Multitags, Tags in one graph
     if not isinstance(blk, nix.Block):
         raise TypeError
-    dali_1d = []
-    for idx, da in enumerate(blk.data_arrays):
-        if len(da.dimensions) == 1:
-            dali_1d.append(da)
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    for da in dali_1d:
-        ax.plot(np.arange(len(da)), da)
-    for idx, tag in enumerate(blk.tags):
-        if len(tag.position) == 2:
-            plt.plot(tag.position[0][0], tag.position[0][1], 'ro')
-        elif len(tag.position) == 1:
-            refs = tag.references
-            for i, r in enumerate(refs):
-                intersect = np.interp(tag.position[i], np.arange(len(r)) , r)
-                plt.plot(tag.position[i], intersect, 'ro')
-    for mt in blk.multi_tags:
-        if len(mt.positions.shape) == 1:
-            refs = mt.references
-            for i, r in enumerate(refs):
-                intersect = np.interp(mt.positions[i], np.arange(len(r)), r)
-                plt.plot(mt.positions[i], intersect, 'ro')
+    filter_list = _filter_da(blk, x_unit)
+    fig, ax = plot_da(blk.data_arrays[filter_list])
+
+
+    # for idx, tag in enumerate(blk.tags):
+    #     if len(tag.position) == 2:
+    #         plt.plot(tag.position[0][0], tag.position[0][1], 'ro')
+    #     elif len(tag.position) == 1:
+    #         refs = tag.references
+    #         for i, r in enumerate(refs):
+    #             intersect = np.interp(tag.position[i], np.arange(len(r)) , r)
+    #             plt.plot(tag.position[i], intersect, 'ro')
+    # for mt in blk.multi_tags:
+    #     if len(mt.positions.shape) == 1:
+    #         refs = mt.references
+    #         for i, r in enumerate(refs):
+    #             intersect = np.interp(mt.positions[i], np.arange(len(r)), r)
+    #             plt.plot(mt.positions[i], intersect, 'ro')
     plt.legend()
     plt.show()
     fig.canvas.draw_idle()
-    return fig, ax, dali_1d
+    return fig, ax
 
 
 def interact_block(blk):
-    fig,ax, dali = _plot_block(blk)
+    fig,ax = _plot_block(blk)
 
     def update(box):
         print(box)
@@ -76,8 +72,8 @@ def interact_block(blk):
             idx = das.index(box['owner'])
             ax.lines[idx].set_visible(True)
             fig.canvas.draw_idle()
-    da1d_idx = np.arange(len(dali))
-    das= [widgets.Checkbox(True,description='DataArray - Name:'+dali[n].name) for n in da1d_idx]
+    da1d_idx = np.arange(len(blk.data_arrays))
+    das= [widgets.Checkbox(True,description='DataArray - Name:'+blk.data_arrays[n].name) for n in da1d_idx]
     for box in das:
         box.observe(update, names='value')
         display.display(box)
@@ -87,21 +83,61 @@ def _guess_dimension(da):
     l = len(da.dimensions)
     return l
 
-def _filter_x(blk, u, dim):
+def _filter_da(blk, u):
     # for filter which da can be put on the same graph
     if not util.units.is_si(u):
         raise ValueError("Invalid Unit")
     dali = []
     for i, da in enumerate(blk.data_arrays):
-        if dim not in [dimen.dimension_type for dimen in da.dimensions]:
+        bd = guess_best_xdim(da)
+        if isinstance(da.dimensions[bd], nix.SetDimension):
             continue
-        else:
-            bd = guess_best_xdim(da)
-            if  da.dimensions[bd].dimension_type != dim:
-                bd = 0 if bd == 1 else 1
-        if da.unit:
-            dau = da.unit[bd]
-        if not util.units.scalable(u, dau):
+        if not da.dimensions[bd].unit:
             continue
-        dali.append((i, bd))
+        if not util.units.scalable(da.dimensions[bd].unit, u):
+            continue
+
+        dali.append(i)
     return dali
+
+
+def plot_da(data_arrays, x_axis=None, y_axis=None):
+    plter_type = type(suggested_plotter(data_arrays[0]))
+    axes_list = [plter_type(da) for da in data_arrays]
+    xlabel = create_label(axes_list[0].array.dimensions[axes_list[0].xdim])
+    ylabel = create_label(axes_list[0].array)
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111)
+    for a in axes_list:
+        bd = a.array.dimensions[a.xdim]
+        if isinstance(bd, nix.RangeDimension):
+            ax.plot(bd.ticks, a.array[:])
+        else:
+            ax.plot(np.arange(start=bd.offset, stop=bd.offset+
+                    bd.sampling_interval*len(a.array), step=bd.sampling_interval), a.array[:])
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    fig.legend()
+    plt.show()
+    return fig, ax
+
+def interact_da(data_arrays):
+    fig,ax = plot_da(data_arrays)
+
+    def update(box):
+        if not box['new']:
+            idx = das.index(box['owner'])
+            ax.lines[idx].set_visible(False)
+            fig.canvas.draw_idle()
+        else:
+            idx = das.index(box['owner'])
+            ax.lines[idx].set_visible(True)
+            fig.canvas.draw_idle()
+    da1d_idx = np.arange(len(data_arrays))
+    das= [widgets.Checkbox(True,description='DataArray - Name:'+data_arrays[n].name) for n in da1d_idx]
+    for box in das:
+        box.observe(update, names='value')
+        display.display(box)
+
+
+
