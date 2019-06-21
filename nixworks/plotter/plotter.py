@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from PIL import Image as img
 
-from IPython import embed
+from IPython import embed, display
+from ipywidgets import interact, interactive, fixed, interact_manual, Checkbox
+import ipywidgets as widgets
 
 
-def guess_buest_xdim(array):
+def guess_best_xdim(array):
     data_extent = array.shape
     if len(data_extent) > 2:
         print("Cannot handle more than 2D, sorry!")
@@ -96,7 +98,7 @@ class EventPlotter:
         self.array = data_array
         self.dim_count = len(data_array.dimensions)
         if xdim == -1:
-            self.xdim = guess_buest_xdim(self.array)
+            self.xdim = guess_best_xdim(self.array)
         elif xdim > 1:
             raise ValueError("EventPlotter: xdim is larger than 2! Cannot plot that kind of data")
         else:
@@ -134,7 +136,7 @@ class CategoryPlotter:
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
         if xdim == -1:
-            self.xdim = guess_buest_xdim(self.array)
+            self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
             raise ValueError("CategoryPlotter: xdim is larger than 2! Cannot plot that kind of data")
         else:
@@ -235,11 +237,13 @@ class LinePlotter:
         self.lines = []
         self.dim_count = len(data_array.dimensions)
         if xdim == -1:
-            self.xdim = guess_buest_xdim(self.array)
+            self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
             raise ValueError("LinePlotter: xdim is larger than 2! Cannot plot that kind of data")
         else:
             self.xdim = xdim
+        self.fig = None
+        self.axis = None
 
     def plot(self, axis=None, maxpoints=100000):
         self.maxpoints = maxpoints
@@ -248,6 +252,8 @@ class LinePlotter:
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
             self.__add_slider()
+        else:
+            self.axis = axis
 
         dim_count = len(self.array.dimensions)
         if dim_count > 2:
@@ -353,7 +359,7 @@ def explore_block(block):
     ax = fig.add_subplot(111)
     arrays = {}
     for a in block.data_arrays:
-        dim = guess_buest_xdim(a)
+        dim = guess_best_xdim(a)
         best_dim = a.dimensions[dim]
 
         if dim > -1 and  best_dim.dimension_type != nix.DimensionType.Set:
@@ -396,3 +402,4 @@ if __name__ == "__main__":
             p.plot()
             plt.show()
     f.close()
+
