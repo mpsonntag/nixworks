@@ -204,6 +204,9 @@ class ImagePlotter:
             self.fig = plt.figure()
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
+        else:
+            self.fig = axis.figure
+            self.axis = axis
         if dim_count == 2:
             return self.plot_2d()
         elif dim_count == 3:
