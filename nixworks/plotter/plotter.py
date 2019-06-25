@@ -96,6 +96,7 @@ class EventPlotter:
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.sc = None
         self.dim_count = len(data_array.dimensions)
         if xdim == -1:
             self.xdim = guess_best_xdim(self.array)
@@ -109,6 +110,9 @@ class EventPlotter:
             self.fig = plt.figure(figsize=[5.5, 2.])
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
+        else:
+            self.fig = axis.figure
+            self.axis = axis
         if len(self.array.dimensions) == 1:
             return self.plot_1d()
         else:
@@ -122,7 +126,7 @@ class EventPlotter:
             ylabel = create_label(self.array)
         else:
             ylabel = ""
-        self.axis.scatter(data, np.ones(data.shape))
+        self.sc = self.axis.scatter(data, np.ones(data.shape))
         self.axis.set_ylim([0.5, 1.5])
         self.axis.set_yticks([1.])
         self.axis.set_yticklabels([])
@@ -147,6 +151,9 @@ class CategoryPlotter:
             self.fig = plt.figure()
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
+        else:
+            self.fig = axis.figure
+            self.axis = axis
         if len(self.array.dimensions) == 1:
             return self.plot_1d()
         elif len(self.array.dimensions) == 2:
