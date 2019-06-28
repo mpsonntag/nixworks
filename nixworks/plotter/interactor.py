@@ -9,7 +9,7 @@ from nixio import util
 class Interactor:
 
     def __init__(self):
-        fig = plt.figure(figsize=(8, 6))
+        fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(111)
         self.fig = fig
         self.ax = ax
@@ -17,9 +17,11 @@ class Interactor:
         # Tag for later references to all plotted objects
         self.mpl_tag = None
         # List of line references for later use
-        self.lines = []
+        self.patches = []
         # List for labels
-        self.labels= {'x': None, 'y': None}
+        self.labels= {'x': None, 'y': None, 'x_unit': None, 'y_unit': None}
+        self.arrays = []
+        self.check_box = []
 
     @staticmethod
     def _check_da_combination(data_arrays):
@@ -54,8 +56,11 @@ class Interactor:
             a.plot(axis=self.ax)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-                   ncol=1, borderaxespad=0., handler_map={plt.axhline: InteractHandler()})
+        # for i, da in enumerate(data_arrays):
+        #     self.patches.append(mpatches.Patch(color=str(plotter_list[i].sc.get_color()) ,label=da.name))
+        legend1 = plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+                   ncol=1, borderaxespad=0.)
+        plt.gca().add_artist(legend1)
         plt.show()
         self.plotter_list = plotter_list
 
@@ -63,10 +68,12 @@ class Interactor:
     def interact_da(self, data_arrays, enable_tag=True):
         if not self._check_da_combination(data_arrays):
             raise ValueError('Cannot plot these DataArrays in the same graph.')
+        self.arrays = data_arrays
+        self.ax.clear()
         self._plot_da(data_arrays)
         def update_da(box):
             if not box['new']:
-                idx = das.index(box['owner'])
+                idx = self.check_box.index(box['owner'])
                 if self.ax.lines:
                     self.ax.lines[idx].set_visible(False)
                 else:
@@ -75,7 +82,7 @@ class Interactor:
                             a.sc.set_visible(False)
                 self.fig.canvas.draw_idle()
             else:
-                idx = das.index(box['owner'])
+                idx = self.check_box.index(box['owner'])
                 if self.ax.lines:
                     self.ax.lines[idx].set_visible(True)
                 else:
@@ -84,11 +91,13 @@ class Interactor:
                             a.sc.set_visible(True)
                 self.fig.canvas.draw_idle()
         da1d_idx = np.arange(len(data_arrays))
-        das= [widgets.Checkbox(True,description=str(data_arrays[n].name)) for n in da1d_idx]
-        for box in das:
+        self.check_box = [widgets.Checkbox(True,description=str(data_arrays[n].name)) for n in da1d_idx]
+        for box in self.check_box:
             box.observe(update_da, names='value')
             display.display(box)
-        tag_drop = self._reverse_search_tag(data_arrays)
+        if enable_tag:
+            tag_drop = self._reverse_search_tag(data_arrays)
+
 
         def mark_tag(tag):
             if tag is None:
@@ -96,13 +105,23 @@ class Interactor:
                     self.mpl_tag.remove()
                     self.mpl_tag = None
             else:
+                ref = tag.references
+                for i, da in enumerate(self.arrays):
+                    if da not in ref:
+                        try:
+                            self.plotter_list[i].sc.set_visible(False)
+                        except AttributeError:
+                            self.plotter_list[i].lines.set_visible(False)
+                        self.check_box[i].value = False
                 x1, = tag.position
                 y1 = 0
                 if tag.extent:
                     if self.mpl_tag:
                         self.mpl_tag.remove()
                         self.mpl_tag = None
-                    tagged = plt.axvspan(x1, x1+tag.extent[0], facecolor='#2ca02c', alpha=0.5, zorder=1)
+                    tagged = plt.axvspan(x1, x1 + tag.extent[0],
+                                         facecolor='#2ca02c', alpha=0.5,
+                                         zorder=1)
                     self.mpl_tag = tagged
                 else:
                     if self.mpl_tag:
@@ -110,7 +129,6 @@ class Interactor:
                         self.mpl_tag = None
                     tagged = plt.plot(x1, y1, 'ro')
                     self.mpl_tag = tagged
-
         if enable_tag:
             interact(mark_tag, tag=tag_drop)
 
@@ -124,6 +142,11 @@ class Interactor:
                     tag_list.append(tag)
         return tag_list
 
+    def rescale_axis(self, new_unit, axis='x'):
+        pass
+
+    def show_tag(self):
+        self.ax.clear()
 
 class AnyObject(object):
     pass
