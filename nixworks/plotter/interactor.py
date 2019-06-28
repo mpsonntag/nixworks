@@ -16,7 +16,7 @@ from ipywidgets import interact, interactive, fixed, interact_manual, Checkbox
 import ipywidgets as widgets
 
 
-class Interacter:
+class Interactor:
 
     def __init__(self):
         # Tag list for later references to all plotted objects

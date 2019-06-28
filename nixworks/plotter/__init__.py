@@ -1,2 +1,2 @@
-from .interacter import *
+from .interactor import *
 from .plotter import *
