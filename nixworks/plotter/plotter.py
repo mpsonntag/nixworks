@@ -3,11 +3,6 @@ import nixio as nix
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
-from PIL import Image as img
-
-from IPython import embed, display
-from ipywidgets import interact, interactive, fixed, interact_manual, Checkbox
-import ipywidgets as widgets
 
 
 def guess_best_xdim(array):
