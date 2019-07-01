@@ -134,6 +134,7 @@ class CategoryPlotter:
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.bars = []
         if xdim == -1:
             self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
@@ -165,7 +166,7 @@ class CategoryPlotter:
         if categories is None:
             categories = ["Cat-%i"%i for i in range(len(data))]
         ylabel = create_label(self.array)
-        self.axis.bar(range(1, len(categories)+1), data, tick_label=categories)
+        self.bars.append(self.axis.bar(range(1, len(categories)+1), data, tick_label=categories))
         self.axis.set_ylabel(ylabel)
         return self.axis
 
@@ -185,13 +186,12 @@ class CategoryPlotter:
             series_names = ["Series-%i"%i for i in range(data.shape[1-self.xdim])]
 
         bar_width = 1/data.shape[1] * 0.75
-        bars = []
         for i in range(data.shape[1]):
             x_values = np.arange(data.shape[0]) +  i * bar_width
-            bars.append(self.axis.bar(x_values, data[:,i], width=bar_width, align="center")[0])
+            self.bars.append(self.axis.bar(x_values, data[:,i], width=bar_width, align="center")[0])
         self.axis.set_xticks(np.arange(data.shape[0]) + data.shape[1] * bar_width/2)
         self.axis.set_xticklabels(categories)
-        self.axis.legend(bars, series_names, loc=1)
+        self.axis.legend(self.bars, series_names, loc=1)
         return self.axis
 
 
@@ -199,6 +199,7 @@ class ImagePlotter:
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.image = None
 
     def plot(self, axis=None):
         dim_count  = len(self.array.dimensions)
@@ -222,7 +223,7 @@ class ImagePlotter:
         y = self.array.dimensions[1].axis(data.shape[1])
         xlabel = create_label(self.array.dimensions[0])
         ylabel = create_label(self.array.dimensions[1])
-        self.axis.imshow(data, extent=[x[0], x[-1], y[0], y[-1]])
+        self.image = self.axis.imshow(data, extent=[x[0], x[-1], y[0], y[-1]])
         self.axis.set_xlabel(xlabel)
         self.axis.set_ylabel(ylabel)
         self.axis.set

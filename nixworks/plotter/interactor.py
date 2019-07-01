@@ -22,6 +22,7 @@ class Interactor:
         self.labels= {'x': None, 'y': None, 'x_unit': None, 'y_unit': None}
         self.arrays = []
         self.check_box = []
+        self.mpl_artists = []
 
     @staticmethod
     def _check_da_combination(data_arrays):
@@ -30,13 +31,13 @@ class Interactor:
         if not util.units.is_si(u):
             raise ValueError("Invalid Unit")
         bd = guess_best_xdim(data_arrays[0])
-        dim_u = data_arrays[0].dimensions[bd].unit
         if isinstance(data_arrays[0].dimensions[bd], nix.SetDimension):
             for i, da in enumerate(data_arrays):
                 bd = guess_best_xdim(data_arrays[0])
                 if not isinstance(da.dimensions[bd], nix.SetDimension):
                     return False
         else:
+            dim_u = data_arrays[0].dimensions[bd].unit
             for i, da in enumerate(data_arrays):
                 bd = guess_best_xdim(data_arrays[0])
                 if isinstance(da.dimensions[bd], nix.SetDimension):
@@ -51,9 +52,11 @@ class Interactor:
         plotter_list = [suggested_plotter(da) for da in data_arrays]
         xlabel = create_label(plotter_list[0].array.dimensions[plotter_list[0].xdim])
         ylabel = create_label(plotter_list[0].array)
-
         for a in plotter_list:
             a.plot(axis=self.ax)
+            print(type(a))
+            self.populate_artist(a)
+
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         # for i, da in enumerate(data_arrays):
@@ -74,21 +77,13 @@ class Interactor:
         def update_da(box):
             if not box['new']:
                 idx = self.check_box.index(box['owner'])
-                if self.ax.lines:
-                    self.ax.lines[idx].set_visible(False)
-                else:
-                    for i, a in enumerate(self.plotter_list):
-                        if  i == idx:
-                            a.sc.set_visible(False)
+                for a in self.mpl_artists[idx]:
+                    a.set_visible(False)
                 self.fig.canvas.draw_idle()
             else:
                 idx = self.check_box.index(box['owner'])
-                if self.ax.lines:
-                    self.ax.lines[idx].set_visible(True)
-                else:
-                    for i, a in enumerate(self.plotter_list):
-                        if i == idx:
-                            a.sc.set_visible(True)
+                for a in self.mpl_artists[idx]:
+                    a.set_visible(True)
                 self.fig.canvas.draw_idle()
         da1d_idx = np.arange(len(data_arrays))
         self.check_box = [widgets.Checkbox(True,description=str(data_arrays[n].name)) for n in da1d_idx]
@@ -148,6 +143,22 @@ class Interactor:
     def show_tag(self):
         self.ax.clear()
 
+    def populate_artist(self, plotter):
+        artist = []
+        if isinstance(plotter, LinePlotter):
+            artist.extend(plotter.lines)
+        elif isinstance(plotter, EventPlotter):
+            artist.extend(plotter.sc)
+        elif isinstance(plotter, CategoryPlotter):
+            for b in plotter.bars:
+                artist.extend(b.patches)
+        elif isinstance(plotter, ImagePlotter):
+            artist.append(plotter.image)
+        else:
+            raise TypeError("Invalid Plotter")
+        self.mpl_artists.append(artist)
+
+
 class AnyObject(object):
     pass
 
@@ -161,4 +172,3 @@ class InteractHandler(object):
                                    transform=handlebox.get_transform())
         handlebox.add_artist(patch)
         return patch
-
