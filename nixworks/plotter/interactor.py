@@ -16,8 +16,7 @@ class Interactor:
         self.labels= {'x': None, 'y': None}
 
     def _plot_da(self, data_arrays, enable_tag_list =False):
-        plter_type = type(suggested_plotter(data_arrays[0]))
-        plotter_list = [plter_type(da) for da in data_arrays]
+        plotter_list = [suggested_plotter(da) for da in data_arrays]
         xlabel = create_label(plotter_list[0].array.dimensions[plotter_list[0].xdim])
         ylabel = create_label(plotter_list[0].array)
         fig = plt.figure(figsize=(8, 6))
