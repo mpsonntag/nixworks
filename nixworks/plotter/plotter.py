@@ -160,12 +160,17 @@ class CategoryPlotter:
     def plot_1d(self):
         data = self.array[:]
         if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Set:
+            print('abc')
             categories = list(self.array.dimensions[self.xdim].labels)
+            print(categories)
+            print()
         else:
             return None
         if categories is None:
             categories = ["Cat-%i"%i for i in range(len(data))]
         ylabel = create_label(self.array)
+        if len(categories) == 0:
+            raise ValueError("Cannot plot a bar chart without any labels")
         self.bars.append(self.axis.bar(range(1, len(categories)+1), data, tick_label=categories))
         self.axis.set_ylabel(ylabel)
         return self.axis

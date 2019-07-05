@@ -48,13 +48,15 @@ class Interactor:
                     return False
         return True
 
-    def _plot_da(self, data_arrays, x_name=None, y_name=None):
+    def _plot_da(self, data_arrays, maxpoints=100000):
         plotter_list = [suggested_plotter(da) for da in data_arrays]
         xlabel = create_label(plotter_list[0].array.dimensions[plotter_list[0].xdim])
         ylabel = create_label(plotter_list[0].array)
         for a in plotter_list:
-            a.plot(axis=self.ax)
-            print(type(a))
+            if isinstance(a, LinePlotter):
+                a.plot(axis=self.ax, maxpoints=maxpoints)
+            else:
+                a.plot(axis=self.ax)
             self.populate_artist(a)
 
         plt.xlabel(xlabel)
@@ -67,13 +69,12 @@ class Interactor:
         plt.show()
         self.plotter_list = plotter_list
 
-
-    def interact_da(self, data_arrays, enable_tag=True):
+    def interact_da(self, data_arrays, enable_tag=True, maxpoints=100000):
         if not self._check_da_combination(data_arrays):
             raise ValueError('Cannot plot these DataArrays in the same graph.')
         self.arrays = data_arrays
         self.ax.clear()
-        self._plot_da(data_arrays)
+        self._plot_da(data_arrays, maxpoints=maxpoints)
         def update_da(box):
             if not box['new']:
                 idx = self.check_box.index(box['owner'])
@@ -90,9 +91,6 @@ class Interactor:
         for box in self.check_box:
             box.observe(update_da, names='value')
             display.display(box)
-        if enable_tag:
-            tag_drop = self._reverse_search_tag(data_arrays)
-
 
         def mark_tag(tag):
             if tag is None:
@@ -125,6 +123,7 @@ class Interactor:
                     tagged = plt.plot(x1, y1, 'ro')
                     self.mpl_tag = tagged
         if enable_tag:
+            tag_drop = self._reverse_search_tag(data_arrays)
             interact(mark_tag, tag=tag_drop)
 
     def _reverse_search_tag(self, data_arrays):
@@ -133,7 +132,7 @@ class Interactor:
         blk = data_arrays[0]._parent
         for da in data_arrays:
             for tag in blk.tags:
-                if da in tag.references:
+                if da in tag.references and tag not in tag_list:
                     tag_list.append(tag)
         return tag_list
 
@@ -158,6 +157,33 @@ class Interactor:
             raise TypeError("Invalid Plotter")
         self.mpl_artists.append(artist)
 
+    def group_da(self, files):
+        for f in files:
+            self.group_da_file(f)
+
+    def group_da_file(self, f):
+        for b in f.blocks:
+            self.group_da_blk(b)
+        f.close()
+
+    @staticmethod
+    def group_da_blk(block):
+        arrays = {}
+        for a in block.data_arrays:
+            dim = guess_best_xdim(a)
+            best_dim = a.dimensions[dim]
+
+            if dim > -1 and best_dim.dimension_type != nix.DimensionType.Set:
+                if best_dim.dimension_type == nix.DimensionType.Sample:
+                    start = best_dim.position_at(0)
+                    end = best_dim.position_at(a.data_extent[dim] - 1)
+                elif best_dim.dimension_type == nix.DimensionType.Range:
+                    start = best_dim.tick_at(0)
+                    end = best_dim.tick_at(a.data_extent[dim] - 1)
+                else:
+                    start = 1
+                    end = 1
+                arrays[a.name] = [(start, end)]
 
 class AnyObject(object):
     pass
