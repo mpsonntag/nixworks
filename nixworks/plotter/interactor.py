@@ -70,65 +70,42 @@ class Interactor:
         self.plotter_list = plotter_list
 
     def interact_da(self, data_arrays, enable_tag=True, enable_xzoom=True, maxpoints=None):
+        # Check if the DataArrays can be plotted together
         if not self._check_da_combination(data_arrays):
             raise ValueError('Cannot plot these DataArrays in the same graph.')
+        # Set maxpoints to the no. points of the longest array to be plotted if not being customized
         if maxpoints is None:
             maxpoints = len(max(data_arrays, key=len))
         self.arrays = data_arrays
         self.ax.clear()
         self._plot_da(data_arrays, maxpoints=maxpoints)
+        # TODO: Add the for-Image Interactive function
         if np.any([isinstance(p, ImagePlotter) for p in self.plotter_list]):
             raise TypeError('Please use the interact function specific for Images')
-        def da_visibility(box):
-            if not box['new']:
-                idx = self.check_box.index(box['owner'])
-                for a in self.mpl_artists[idx]:
-                    a.set_visible(False)
-                self.fig.canvas.draw_idle()
-            else:
-                idx = self.check_box.index(box['owner'])
-                for a in self.mpl_artists[idx]:
-                    a.set_visible(True)
-                self.fig.canvas.draw_idle()
+
+        # Setting up checkboxes for interaction of da_visibility
         da1d_idx = np.arange(len(data_arrays))
         self.check_box = [widgets.Checkbox(True,description=str(data_arrays[n].name)) for n in da1d_idx]
         for box in self.check_box:
-            box.observe(da_visibility, names='value')
+            box.observe(self._da_visibility, names='value')
             display.display(box)
 
-        def mark_tag(tag):
-            if tag is None:
-                if self.mpl_tag:
-                    self.mpl_tag.remove()
-                    self.mpl_tag = None
+        # Interactive Legends
+        def legend_visibility(box):
+            if not box['new']:
+                self.ax.legend().set_visible(False)
+                self.fig.canvas.draw_idle()
             else:
-                ref = tag.references
-                for i, da in enumerate(self.arrays):
-                    if da not in ref:
-                        try:
-                            self.plotter_list[i].sc.set_visible(False)
-                        except AttributeError:
-                            self.plotter_list[i].lines.set_visible(False)
-                        self.check_box[i].value = False
-                x1, = tag.position
-                y1 = 0
-                if tag.extent:
-                    if self.mpl_tag:
-                        self.mpl_tag.remove()
-                        self.mpl_tag = None
-                    tagged = plt.axvspan(x1, x1 + tag.extent[0],
-                                         facecolor='#2ca02c', alpha=0.5,
-                                         zorder=1)
-                    self.mpl_tag = tagged
-                else:
-                    if self.mpl_tag:
-                        self.mpl_tag.remove()
-                        self.mpl_tag = None
-                    tagged = plt.plot(x1, y1, 'ro')
-                    self.mpl_tag = tagged
+                self.ax.legend().set_visible(True)
+                self.fig.canvas.draw_idle()
+        legend_box = widgets.Checkbox(True, description='Legends')
+        legend_box.observe(legend_visibility, names='value')
+        display.display(legend_box)
+        # Interactive Tagged Area
         if enable_tag:
             tag_drop = self._reverse_search_tag(data_arrays)
-            interact(mark_tag, tag=tag_drop)
+            interact(self._mark_tag, tag=tag_drop)
+        # Interactive Sliders for zooming on x-axis
         if enable_xzoom:
             x_start = widgets.FloatSlider(self.ax.get_xlim()[0], description='X axis start')
             x_end = widgets.FloatSlider(self.ax.get_xlim()[1], description='X axis end')
@@ -141,6 +118,55 @@ class Interactor:
                 self.fig.canvas.draw_idle()
             x_end.observe(change_x_end, names='value')
             display.display(x_start, x_end)
+
+    # Function for setting visibility of the DataArrays
+    def _da_visibility(self, box):
+        handle1, legend1 = self.ax.get_legend_handles_labels()
+        if not box['new']:
+            idx = self.check_box.index(box['owner'])
+            for a in self.mpl_artists[idx]:
+                a.set_visible(False)
+            handle1 = self.ax.get_legend_handles_labels()[0]
+            self.ax.legend(handle1, legend1, loc=0)
+            self.fig.canvas.draw_idle()
+        else:
+            idx = self.check_box.index(box['owner'])
+            for a in self.mpl_artists[idx]:
+                a.set_visible(True)
+            handle1, legend1 = self.ax.get_legend_handles_labels()
+            self.ax.legend(handle1, legend1, loc=0)
+            self.fig.canvas.draw_idle()
+
+    def _mark_tag(self, tag):
+        if tag is None:
+            if self.mpl_tag:
+                self.mpl_tag.remove()
+                self.mpl_tag = None
+        else:
+            ref = tag.references
+            for i, da in enumerate(self.arrays):
+                if da not in ref:
+                    try:
+                        self.plotter_list[i].sc.set_visible(False)
+                    except AttributeError:
+                        self.plotter_list[i].lines.set_visible(False)
+                    self.check_box[i].value = False
+            x1, = tag.position
+            y1 = 0
+            if tag.extent:
+                if self.mpl_tag:
+                    self.mpl_tag.remove()
+                    self.mpl_tag = None
+                tagged = plt.axvspan(x1, x1 + tag.extent[0],
+                                     facecolor='#2ca02c', alpha=0.5,
+                                     zorder=1)
+                self.mpl_tag = tagged
+            else:
+                if self.mpl_tag:
+                    self.mpl_tag.remove()
+                    self.mpl_tag = None
+                tagged = plt.plot(x1, y1, 'ro')
+                self.mpl_tag = tagged
 
     def _reverse_search_tag(self, data_arrays):
         # Only for data_arrays within the same block
@@ -194,17 +220,3 @@ class Interactor:
                     start = 1
                     end = 1
                 arrays[a.name] = [(start, end)]
-
-class AnyObject(object):
-    pass
-
-
-class InteractHandler(object):
-    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
-        x0, y0 = handlebox.xdescent, handlebox.ydescent
-        width, height = handlebox.width, handlebox.height
-        patch = mpatches.Rectangle([x0, y0], width, height, facecolor='red',
-                                   edgecolor='black', hatch='xx', lw=3,
-                                   transform=handlebox.get_transform())
-        handlebox.add_artist(patch)
-        return patch
