@@ -52,20 +52,20 @@ class Interactor:
         plotter_list = [suggested_plotter(da) for da in data_arrays]
         xlabel = create_label(plotter_list[0].array.dimensions[plotter_list[0].xdim])
         ylabel = create_label(plotter_list[0].array)
+
         for a in plotter_list:
             if isinstance(a, LinePlotter):
                 a.plot(axis=self.ax, maxpoints=maxpoints)
             else:
                 a.plot(axis=self.ax)
-            self.populate_artist(a)
+            self._populate_artist(a)
 
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        # for i, da in enumerate(data_arrays):
+        # for i, da in enumerate(datal_arrays):
         #     self.patches.append(mpatches.Patch(color=str(plotter_list[i].sc.get_color()) ,label=da.name))
-        legend1 = plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-                   ncol=1, borderaxespad=0.)
-        plt.gca().add_artist(legend1)
+        handle1, legend1 = self.ax.get_legend_handles_labels()
+        self.ax.legend(handle1, legend1, loc=0)
         plt.show()
         self.plotter_list = plotter_list
 
@@ -77,6 +77,8 @@ class Interactor:
         self.arrays = data_arrays
         self.ax.clear()
         self._plot_da(data_arrays, maxpoints=maxpoints)
+        if np.any([isinstance(p, ImagePlotter) for p in self.plotter_list]):
+            raise TypeError('Please use the interact function specific for Images')
         def da_visibility(box):
             if not box['new']:
                 idx = self.check_box.index(box['owner'])
@@ -140,8 +142,6 @@ class Interactor:
             x_end.observe(change_x_end, names='value')
             display.display(x_start, x_end)
 
-
-
     def _reverse_search_tag(self, data_arrays):
         # Only for data_arrays within the same block
         tag_list = [None]
@@ -152,13 +152,7 @@ class Interactor:
                     tag_list.append(tag)
         return tag_list
 
-    def rescale_axis(self, new_unit, axis='x'):
-        pass
-
-    def show_tag(self):
-        self.ax.clear()
-
-    def populate_artist(self, plotter):
+    def _populate_artist(self, plotter):
         artist = []
         if isinstance(plotter, LinePlotter):
             artist.extend(plotter.lines)

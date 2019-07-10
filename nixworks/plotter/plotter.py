@@ -304,7 +304,8 @@ class LinePlotter:
         x = np.asarray(self.array.dimensions[self.xdim].axis(len(y), int(start)))
 
         if len(self.lines) == 0:
-            self.lines.extend(self.axis.plot(x, y))
+            l, = self.axis.plot(x, y, label=self.array.name)
+            self.lines.append(l)
         else:
             self.lines[0].set_ydata(y)
             self.lines[0].set_xdata(x)
@@ -331,7 +332,8 @@ class LinePlotter:
                 y = self.array[i, int(start):int(end)]
 
             if len(self.lines) <= i:
-                self.lines.extend(self.axis.plot(x, y, label=l))
+                ll, = self.axis.plot(x, y, label=l)
+                self.lines.append(ll)
             else:
                 self.lines[i].set_ydata(y)
                 self.lines[i].set_xdata(x)
