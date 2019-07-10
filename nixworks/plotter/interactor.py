@@ -48,7 +48,7 @@ class Interactor:
                     return False
         return True
 
-    def _plot_da(self, data_arrays, maxpoints=100000):
+    def _plot_da(self, data_arrays, maxpoints):
         plotter_list = [suggested_plotter(da) for da in data_arrays]
         xlabel = create_label(plotter_list[0].array.dimensions[plotter_list[0].xdim])
         ylabel = create_label(plotter_list[0].array)
@@ -69,13 +69,15 @@ class Interactor:
         plt.show()
         self.plotter_list = plotter_list
 
-    def interact_da(self, data_arrays, enable_tag=True, maxpoints=100000):
+    def interact_da(self, data_arrays, enable_tag=True, enable_xzoom=True, maxpoints=None):
         if not self._check_da_combination(data_arrays):
             raise ValueError('Cannot plot these DataArrays in the same graph.')
+        if maxpoints is None:
+            maxpoints = len(max(data_arrays, key=len))
         self.arrays = data_arrays
         self.ax.clear()
         self._plot_da(data_arrays, maxpoints=maxpoints)
-        def update_da(box):
+        def da_visibility(box):
             if not box['new']:
                 idx = self.check_box.index(box['owner'])
                 for a in self.mpl_artists[idx]:
@@ -89,7 +91,7 @@ class Interactor:
         da1d_idx = np.arange(len(data_arrays))
         self.check_box = [widgets.Checkbox(True,description=str(data_arrays[n].name)) for n in da1d_idx]
         for box in self.check_box:
-            box.observe(update_da, names='value')
+            box.observe(da_visibility, names='value')
             display.display(box)
 
         def mark_tag(tag):
@@ -125,6 +127,20 @@ class Interactor:
         if enable_tag:
             tag_drop = self._reverse_search_tag(data_arrays)
             interact(mark_tag, tag=tag_drop)
+        if enable_xzoom:
+            x_start = widgets.FloatSlider(self.ax.get_xlim()[0], description='X axis start')
+            x_end = widgets.FloatSlider(self.ax.get_xlim()[1], description='X axis end')
+            def change_x_start(start):
+                self.ax.set(xlim=(start['new'], x_end.value))
+                self.fig.canvas.draw_idle()
+            x_start.observe(change_x_start, names='value')
+            def change_x_end(end):
+                self.ax.set(xlim=(x_start.value, end['new']))
+                self.fig.canvas.draw_idle()
+            x_end.observe(change_x_end, names='value')
+            display.display(x_start, x_end)
+
+
 
     def _reverse_search_tag(self, data_arrays):
         # Only for data_arrays within the same block
