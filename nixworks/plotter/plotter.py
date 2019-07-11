@@ -3,12 +3,9 @@ import nixio as nix
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
-from PIL import Image as img
-
-from IPython import embed
 
 
-def guess_buest_xdim(array):
+def guess_best_xdim(array):
     data_extent = array.shape
     if len(data_extent) > 2:
         print("Cannot handle more than 2D, sorry!")
@@ -94,9 +91,10 @@ class EventPlotter:
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.sc = None
         self.dim_count = len(data_array.dimensions)
         if xdim == -1:
-            self.xdim = guess_buest_xdim(self.array)
+            self.xdim = guess_best_xdim(self.array)
         elif xdim > 1:
             raise ValueError("EventPlotter: xdim is larger than 2! Cannot plot that kind of data")
         else:
@@ -107,6 +105,9 @@ class EventPlotter:
             self.fig = plt.figure(figsize=[5.5, 2.])
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
+        else:
+            self.fig = axis.figure
+            self.axis = axis
         if len(self.array.dimensions) == 1:
             return self.plot_1d()
         else:
@@ -120,7 +121,7 @@ class EventPlotter:
             ylabel = create_label(self.array)
         else:
             ylabel = ""
-        self.axis.scatter(data, np.ones(data.shape))
+        self.sc = self.axis.scatter(data, np.ones(data.shape))
         self.axis.set_ylim([0.5, 1.5])
         self.axis.set_yticks([1.])
         self.axis.set_yticklabels([])
@@ -134,7 +135,7 @@ class CategoryPlotter:
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
         if xdim == -1:
-            self.xdim = guess_buest_xdim(self.array)
+            self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
             raise ValueError("CategoryPlotter: xdim is larger than 2! Cannot plot that kind of data")
         else:
@@ -145,6 +146,9 @@ class CategoryPlotter:
             self.fig = plt.figure()
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
+        else:
+            self.fig = axis.figure
+            self.axis = axis
         if len(self.array.dimensions) == 1:
             return self.plot_1d()
         elif len(self.array.dimensions) == 2:
@@ -202,6 +206,9 @@ class ImagePlotter:
             self.fig = plt.figure()
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
+        else:
+            self.fig = axis.figure
+            self.axis = axis
         if dim_count == 2:
             return self.plot_2d()
         elif dim_count == 3:
@@ -235,11 +242,13 @@ class LinePlotter:
         self.lines = []
         self.dim_count = len(data_array.dimensions)
         if xdim == -1:
-            self.xdim = guess_buest_xdim(self.array)
+            self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
             raise ValueError("LinePlotter: xdim is larger than 2! Cannot plot that kind of data")
         else:
             self.xdim = xdim
+        self.fig = None
+        self.axis = None
 
     def plot(self, axis=None, maxpoints=100000):
         self.maxpoints = maxpoints
@@ -248,6 +257,8 @@ class LinePlotter:
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
             self.axis.set_title(self.array.name)
             self.__add_slider()
+        else:
+            self.axis = axis
 
         dim_count = len(self.array.dimensions)
         if dim_count > 2:
@@ -353,7 +364,7 @@ def explore_block(block):
     ax = fig.add_subplot(111)
     arrays = {}
     for a in block.data_arrays:
-        dim = guess_buest_xdim(a)
+        dim = guess_best_xdim(a)
         best_dim = a.dimensions[dim]
 
         if dim > -1 and  best_dim.dimension_type != nix.DimensionType.Set:
@@ -396,3 +407,4 @@ if __name__ == "__main__":
             p.plot()
             plt.show()
     f.close()
+

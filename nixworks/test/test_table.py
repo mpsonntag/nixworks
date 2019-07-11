@@ -1,8 +1,7 @@
 import numpy as np
-import pandas as pd
 import nixio as nix
 import unittest
-from nixworks.plotter import table
+from nixworks.table import table
 
 
 class TestTable(unittest.TestCase):
