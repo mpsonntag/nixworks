@@ -16,10 +16,9 @@ class Interactor:
         self.plotter_list= []
         # Tag for later references to all plotted objects
         self.mpl_tag = None
-        # List of line references for later use
-        self.patches = []
         # List for labels
         self.labels= {'x': None, 'y': None, 'x_unit': None, 'y_unit': None}
+        # List of line references for later use
         self.arrays = []
         self.check_box = []
         self.mpl_artists = []
@@ -62,8 +61,6 @@ class Interactor:
 
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        # for i, da in enumerate(datal_arrays):
-        #     self.patches.append(mpatches.Patch(color=str(plotter_list[i].sc.get_color()) ,label=da.name))
         handle1, legend1 = self.ax.get_legend_handles_labels()
         self.ax.legend(handle1, legend1, loc=0)
         plt.show()
@@ -121,20 +118,21 @@ class Interactor:
 
     # Function for setting visibility of the DataArrays
     def _da_visibility(self, box):
-        handle1, legend1 = self.ax.get_legend_handles_labels()
         if not box['new']:
             idx = self.check_box.index(box['owner'])
             for a in self.mpl_artists[idx]:
                 a.set_visible(False)
-            handle1 = self.ax.get_legend_handles_labels()[0]
-            self.ax.legend(handle1, legend1, loc=0)
+            if self.ax.get_legend().get_visible():
+                handle1, legend1 = self.ax.get_legend_handles_labels()
+                self.ax.legend(handle1, legend1, loc=0)
             self.fig.canvas.draw_idle()
         else:
             idx = self.check_box.index(box['owner'])
             for a in self.mpl_artists[idx]:
                 a.set_visible(True)
-            handle1, legend1 = self.ax.get_legend_handles_labels()
-            self.ax.legend(handle1, legend1, loc=0)
+            if self.ax.get_legend().get_visible():
+                handle1, legend1 = self.ax.get_legend_handles_labels()
+                self.ax.legend(handle1, legend1, loc=0)
             self.fig.canvas.draw_idle()
 
     def _mark_tag(self, tag):
