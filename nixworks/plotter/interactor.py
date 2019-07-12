@@ -3,6 +3,7 @@ from .plotter import *
 from IPython import display
 from ipywidgets import interact
 import ipywidgets as widgets
+import nixio as nix
 from nixio import util
 
 
@@ -191,30 +192,25 @@ class Interactor:
             raise TypeError("Invalid Plotter")
         self.mpl_artists.append(artist)
 
-    def group_da(self, files):
-        for f in files:
-            self.group_da_file(f)
+    def check_compatible_arrays(self, base_array, candidate_group=None):
+        base_type = base_array.type
+        list_of_compatible = []
+        for candidate_da in candidate_group.data_arrays:
+            if candidate_da.type == base_type:
+                list_of_compatible.append(candidate_da)
+        return base_type, list_of_compatible
 
-    def group_da_file(self, f):
-        for b in f.blocks:
-            self.group_da_blk(b)
-        f.close()
+    def group_arrays_by_compatibility(self, region_of_view):
+        type_dict = dict()
+        for da in region_of_view.data_arrays:
+            if da.type in type_dict.keys():
+                continue
+            type_key, array_in_group = \
+                self.check_compatible_arrays(da, region_of_view)
+            type_dict[type_key] = array_in_group
+        for (k, v) in type_dict.items():
+            print("Type:{} No of Arrays:{}".format(k, len(v)))
+            for d in v:
+                print("        {}".format(d))
 
-    @staticmethod
-    def group_da_blk(block):
-        arrays = {}
-        for a in block.data_arrays:
-            dim = guess_best_xdim(a)
-            best_dim = a.dimensions[dim]
 
-            if dim > -1 and best_dim.dimension_type != nix.DimensionType.Set:
-                if best_dim.dimension_type == nix.DimensionType.Sample:
-                    start = best_dim.position_at(0)
-                    end = best_dim.position_at(a.data_extent[dim] - 1)
-                elif best_dim.dimension_type == nix.DimensionType.Range:
-                    start = best_dim.tick_at(0)
-                    end = best_dim.tick_at(a.data_extent[dim] - 1)
-                else:
-                    start = 1
-                    end = 1
-                arrays[a.name] = [(start, end)]
