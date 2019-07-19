@@ -97,8 +97,8 @@ class Interactor:
             display.display(box)
 
         # Interactive Legends
-        def legend_visibility(box):
-            if not box['new']:
+        def legend_visibility(cbox):
+            if not cbox['new']:
                 self.ax.legend().set_visible(False)
                 self.fig.canvas.draw_idle()
             else:
@@ -116,38 +116,52 @@ class Interactor:
             interact(self._mark_tag, tag=tag_drop)
         # Interactive Sliders for zooming on x-axis
         if enable_xzoom:
-            x_start = widgets.FloatSlider(self.ax.get_xlim()[0],
-                                          description='X axis start')
-            x_end = widgets.FloatSlider(self.ax.get_xlim()[1],
-                                        description='X axis end')
+            xstart_offset, xend_offset = self.ax.get_xlim()
+            x_size = xend_offset - xstart_offset
+            x_start_slider = widgets.FloatSlider(0,
+                                                 description='X axis start')
+            x_end_slider = widgets.FloatSlider(100,
+                                               description='X axis end')
 
             def change_x_start(start):
-                self.ax.set(xlim=(start['new'], x_end.value))
+                start_point = start['new']*x_size/100 + xstart_offset
+                end_point = x_end_slider.value*x_size/100 + xstart_offset
+                self.ax.set(xlim=(start_point, end_point))
                 self.fig.canvas.draw_idle()
-            x_start.observe(change_x_start, names='value')
+            x_start_slider.observe(change_x_start, names='value')
 
             def change_x_end(end):
-                self.ax.set(xlim=(x_start.value, end['new']))
+                start_point = x_start_slider.value*x_size/1000 + xstart_offset
+                end_point = end['new']*x_size/100 + xstart_offset
+                self.ax.set(xlim=(start_point, end_point))
                 self.fig.canvas.draw_idle()
-            x_end.observe(change_x_end, names='value')
-            display.display(x_start, x_end)
+            x_end_slider.observe(change_x_end, names='value')
+            display.display(x_start_slider, x_end_slider)
 
         if enable_yzoom:
-            y_start = widgets.FloatSlider(self.ax.get_ylim()[0],
-                                          description='Y axis start')
-            y_end = widgets.FloatSlider(self.ax.get_ylim()[1],
-                                        description='Y axis end')
+            ystart_offset, yend_offset = self.ax.get_ylim()
+            y_size = yend_offset - ystart_offset
+            y_start_slider = widgets.FloatSlider(0,
+                                                 description='Y axis bottom')
+            y_end_slider = widgets.FloatSlider(100,
+                                               description='Y axis top')
 
             def change_y_start(start):
-                self.ax.set(ylim=(start['new'], y_end.value))
+                start_point = start['new'] * y_size / 100 + ystart_offset
+                end_point = y_end_slider.value * y_size / 100 + ystart_offset
+                self.ax.set(ylim=(start_point, end_point))
                 self.fig.canvas.draw_idle()
-            y_start.observe(change_y_start, names='value')
+
+            y_start_slider.observe(change_y_start, names='value')
 
             def change_y_end(end):
-                self.ax.set(ylim=(y_start.value, end['new']))
+                start_point = y_start_slider.value * y_size / 1000 + ystart_offset
+                end_point = end['new'] * y_size / 100 + ystart_offset
+                self.ax.set(ylim=(start_point, end_point))
                 self.fig.canvas.draw_idle()
-            y_end.observe(change_y_end, names='value')
-            display.display(y_start, y_end)
+
+            y_end_slider.observe(change_y_end, names='value')
+            display.display(y_start_slider, y_end_slider)
 
     # Function for setting visibility of the DataArrays
     def _da_visibility(self, box):
