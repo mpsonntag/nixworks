@@ -29,13 +29,15 @@ class Interactor:
     @staticmethod
     def _check_da_combination(data_arrays):
         # checking if the DataArrays can be put in the same graph
-        u = data_arrays[0].unit
         # Checks below not applicable to Images
         if np.any([len(da.dimensions) > 2 and type(suggested_plotter(da))
                    == ImagePlotter for da in data_arrays]):
             return True
-        # TODO: check scalable when they are si/ but not si is ok
+
+        # Use first DataArray as benchmark
+        u = data_arrays[0].unit
         bd = guess_best_xdim(data_arrays[0])
+
         if isinstance(data_arrays[0].dimensions[bd], nix.SetDimension):
             for i, cda in enumerate(data_arrays):
                 bd = guess_best_xdim(data_arrays[0])
@@ -43,8 +45,17 @@ class Interactor:
                     return False
         else:
             dim_u = data_arrays[0].dimensions[bd].unit
+            if not util.units.is_si(dim_u):
+                for i, cda in enumerate(data_arrays):
+                    bd = guess_best_xdim(cda)
+                    if cda.dimensions[bd].unit != dim_u:
+                        return False
+            if not util.units.is_si(u):
+                for i, cda in enumerate(data_arrays):
+                    if cda.unit != u:
+                        return False
             for i, cda in enumerate(data_arrays):
-                bd = guess_best_xdim(data_arrays[0])
+                bd = guess_best_xdim(cda)
                 if isinstance(cda.dimensions[bd], nix.SetDimension):
                     return False
                 if u and not util.units.scalable(cda.unit, u):
