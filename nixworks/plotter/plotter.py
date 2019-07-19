@@ -160,10 +160,7 @@ class CategoryPlotter:
     def plot_1d(self):
         data = self.array[:]
         if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Set:
-            print('abc')
             categories = list(self.array.dimensions[self.xdim].labels)
-            print(categories)
-            print()
         else:
             return None
         if categories is None:
