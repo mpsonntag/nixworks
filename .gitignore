@@ -1,0 +1,5 @@
+*.pyc
+*.xml
+nixworks/plotter/__pycache__/
+.idea/
+

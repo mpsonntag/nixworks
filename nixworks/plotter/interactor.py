@@ -5,6 +5,7 @@ from ipywidgets import interact
 import ipywidgets as widgets
 import nixio as nix
 from nixio import util
+import matplotlib.patches as patches
 
 
 class Interactor:
@@ -12,6 +13,7 @@ class Interactor:
     def __init__(self):
         fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(111)
+
         self.fig = fig
         self.ax = ax
         self.plotter_list= []
@@ -23,13 +25,17 @@ class Interactor:
         self.arrays = []
         self.check_box = []
         self.mpl_artists = []
+        self.image_bool = np.any(isinstance(p, ImagePlotter) for p in self.plotter_list)
 
     @staticmethod
     def _check_da_combination(data_arrays):
         # checking if the DataArrays can be put in the same graph
         u = data_arrays[0].unit
-        if not util.units.is_si(u):
-            raise ValueError("Invalid Unit")
+        # Checks below not applicable to Images
+        if np.any([len(da.dimensions) > 2 and type(suggested_plotter(da))
+                   == ImagePlotter for da in data_arrays]):
+            return True
+        #TODO: check scalable when they are si/ but not si is ok
         bd = guess_best_xdim(data_arrays[0])
         if isinstance(data_arrays[0].dimensions[bd], nix.SetDimension):
             for i, da in enumerate(data_arrays):
@@ -50,8 +56,6 @@ class Interactor:
 
     def _plot_da(self, data_arrays, maxpoints):
         plotter_list = [suggested_plotter(da) for da in data_arrays]
-        xlabel = create_label(plotter_list[0].array.dimensions[plotter_list[0].xdim])
-        ylabel = create_label(plotter_list[0].array)
 
         for a in plotter_list:
             if isinstance(a, LinePlotter):
@@ -60,14 +64,18 @@ class Interactor:
                 a.plot(axis=self.ax)
             self._populate_artist(a)
 
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        handle1, legend1 = self.ax.get_legend_handles_labels()
-        self.ax.legend(handle1, legend1, loc=0)
+        if not self.image_bool:
+            xlabel = create_label(plotter_list[0].array.dimensions[plotter_list[0].xdim])
+            ylabel = create_label(plotter_list[0].array)
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+
+            handle1, legend1 = self.ax.get_legend_handles_labels()
+            self.ax.legend(handle1, legend1, loc=0)
         plt.show()
         self.plotter_list = plotter_list
 
-    def interact_da(self, data_arrays, enable_tag=True, enable_xzoom=True, maxpoints=None):
+    def interact_da(self, data_arrays, enable_tag=True, enable_xzoom=True, maxpoints=None, enable_yzoom=False):
         # Check if the DataArrays can be plotted together
         if not self._check_da_combination(data_arrays):
             raise ValueError('Cannot plot these DataArrays in the same graph.')
@@ -77,10 +85,6 @@ class Interactor:
         self.arrays = data_arrays
         self.ax.clear()
         self._plot_da(data_arrays, maxpoints=maxpoints)
-        # TODO: Add the for-Image Interactive function
-        if np.any([isinstance(p, ImagePlotter) for p in self.plotter_list]):
-            raise TypeError('Please use the interact function specific for Images')
-
         # Setting up checkboxes for interaction of da_visibility
         da1d_idx = np.arange(len(data_arrays))
         self.check_box = [widgets.Checkbox(True,description=str(data_arrays[n].name)) for n in da1d_idx]
@@ -96,10 +100,13 @@ class Interactor:
             else:
                 self.ax.legend().set_visible(True)
                 self.fig.canvas.draw_idle()
-        legend_box = widgets.Checkbox(True, description='Legends')
-        legend_box.observe(legend_visibility, names='value')
-        display.display(legend_box)
+
+        if not self.image_bool:
+            legend_box = widgets.Checkbox(True, description='Legends')
+            legend_box.observe(legend_visibility, names='value')
+            display.display(legend_box)
         # Interactive Tagged Area
+        #TODO: Change tag style for Image plotter
         if enable_tag:
             tag_drop = self._reverse_search_tag(data_arrays)
             interact(self._mark_tag, tag=tag_drop)
@@ -117,13 +124,26 @@ class Interactor:
             x_end.observe(change_x_end, names='value')
             display.display(x_start, x_end)
 
+        if enable_yzoom:
+            y_start = widgets.FloatSlider(self.ax.get_ylim()[0], description='Y axis start')
+            y_end = widgets.FloatSlider(self.ax.get_ylim()[1], description='Y axis end')
+            def change_y_start(start):
+                self.ax.set(ylim=(start['new'], y_end.value))
+                self.fig.canvas.draw_idle()
+            y_start.observe(change_y_start, names='value')
+            def change_y_end(end):
+                self.ax.set(ylim=(y_start.value, end['new']))
+                self.fig.canvas.draw_idle()
+            y_end.observe(change_y_end, names='value')
+            display.display(y_start, y_end)
+
     # Function for setting visibility of the DataArrays
     def _da_visibility(self, box):
         if not box['new']:
             idx = self.check_box.index(box['owner'])
             for a in self.mpl_artists[idx]:
                 a.set_visible(False)
-            if self.ax.get_legend().get_visible():
+            if self.ax.get_legend() and self.ax.get_legend().get_visible():
                 handle1, legend1 = self.ax.get_legend_handles_labels()
                 self.ax.legend(handle1, legend1, loc=0)
             self.fig.canvas.draw_idle()
@@ -131,7 +151,7 @@ class Interactor:
             idx = self.check_box.index(box['owner'])
             for a in self.mpl_artists[idx]:
                 a.set_visible(True)
-            if self.ax.get_legend().get_visible():
+            if self.ax.get_legend() and self.ax.get_legend().get_visible():
                 handle1, legend1 = self.ax.get_legend_handles_labels()
                 self.ax.legend(handle1, legend1, loc=0)
             self.fig.canvas.draw_idle()
@@ -150,15 +170,21 @@ class Interactor:
                     except AttributeError:
                         self.plotter_list[i].lines.set_visible(False)
                     self.check_box[i].value = False
-            x1, = tag.position
+            x1, = tag.position[0:1]
             y1 = 0
             if tag.extent:
                 if self.mpl_tag:
                     self.mpl_tag.remove()
                     self.mpl_tag = None
-                tagged = plt.axvspan(x1, x1 + tag.extent[0],
-                                     facecolor='#2ca02c', alpha=0.5,
-                                     zorder=1)
+                if self.image_bool:
+                    tagged = patches.Rectangle((tag.position[1], tag.position[0]),tag.extent[0],
+                                               tag.extent[1], linewidth=1,
+                                               edgecolor='r',facecolor='none')
+                    self.ax.add_patch(tagged)
+                else:
+                    tagged = plt.axvspan(x1, x1 + tag.extent[0],
+                                         facecolor='#2ca02c', alpha=0.5,
+                                         zorder=1)
                 self.mpl_tag = tagged
             else:
                 if self.mpl_tag:
@@ -212,5 +238,3 @@ class Interactor:
             print("Type:{} No of Arrays:{}".format(k, len(v)))
             for d in v:
                 print("        {}".format(d))
-
-
