@@ -134,6 +134,7 @@ class CategoryPlotter:
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.bars = []
         if xdim == -1:
             self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
@@ -165,7 +166,9 @@ class CategoryPlotter:
         if categories is None:
             categories = ["Cat-%i"%i for i in range(len(data))]
         ylabel = create_label(self.array)
-        self.axis.bar(range(1, len(categories)+1), data, tick_label=categories)
+        if len(categories) == 0:
+            raise ValueError("Cannot plot a bar chart without any labels")
+        self.bars.append(self.axis.bar(range(1, len(categories)+1), data, tick_label=categories))
         self.axis.set_ylabel(ylabel)
         return self.axis
 
@@ -185,13 +188,12 @@ class CategoryPlotter:
             series_names = ["Series-%i"%i for i in range(data.shape[1-self.xdim])]
 
         bar_width = 1/data.shape[1] * 0.75
-        bars = []
         for i in range(data.shape[1]):
             x_values = np.arange(data.shape[0]) +  i * bar_width
-            bars.append(self.axis.bar(x_values, data[:,i], width=bar_width, align="center")[0])
+            self.bars.append(self.axis.bar(x_values, data[:,i], width=bar_width, align="center")[0])
         self.axis.set_xticks(np.arange(data.shape[0]) + data.shape[1] * bar_width/2)
         self.axis.set_xticklabels(categories)
-        self.axis.legend(bars, series_names, loc=1)
+        self.axis.legend(self.bars, series_names, loc=1)
         return self.axis
 
 
@@ -199,6 +201,7 @@ class ImagePlotter:
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
+        self.image = None
 
     def plot(self, axis=None):
         dim_count  = len(self.array.dimensions)
@@ -222,7 +225,7 @@ class ImagePlotter:
         y = self.array.dimensions[1].axis(data.shape[1])
         xlabel = create_label(self.array.dimensions[0])
         ylabel = create_label(self.array.dimensions[1])
-        self.axis.imshow(data, extent=[x[0], x[-1], y[0], y[-1]])
+        self.image = self.axis.imshow(data, extent=[x[0], x[-1], y[0], y[-1]])
         self.axis.set_xlabel(xlabel)
         self.axis.set_ylabel(ylabel)
         self.axis.set
@@ -298,7 +301,8 @@ class LinePlotter:
         x = np.asarray(self.array.dimensions[self.xdim].axis(len(y), int(start)))
 
         if len(self.lines) == 0:
-            self.lines.extend(self.axis.plot(x, y))
+            l, = self.axis.plot(x, y, label=self.array.name)
+            self.lines.append(l)
         else:
             self.lines[0].set_ydata(y)
             self.lines[0].set_xdata(x)
@@ -325,7 +329,8 @@ class LinePlotter:
                 y = self.array[i, int(start):int(end)]
 
             if len(self.lines) <= i:
-                self.lines.extend(self.axis.plot(x, y, label=l))
+                ll, = self.axis.plot(x, y, label=l)
+                self.lines.append(ll)
             else:
                 self.lines[i].set_ydata(y)
                 self.lines[i].set_xdata(x)
