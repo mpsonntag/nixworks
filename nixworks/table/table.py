@@ -5,7 +5,7 @@ import numpy as np
 
 def write_to_pandas(dataframe):
     if not isinstance(dataframe, nix.DataFrame):
-        raise (TypeError, "The given object is not a DataFrame")
+        raise TypeError("The given object is not a DataFrame")
     tmp_list = []
     tmp_list.extend(dataframe._h5group.group['data'][:])
     li = [list(ite) for ite in tmp_list]  # make all element list
@@ -26,10 +26,10 @@ def create_from_pandas(blk, pd_df, name, definition=None):
     :param definition: The definition of the DataFrame
     :type definition: str
     """
-    if not isinstance(pd_df, pd.DataFrame):
-        raise (TypeError, "The given object is not a Pandas DataFrame")
     if not isinstance(blk, nix.Block):
-        raise (TypeError, " ")
+        raise TypeError("The first argument must be a NIX Block")
+    if not isinstance(pd_df, pd.DataFrame):
+        raise TypeError("The second argument must be a Pandas DataFrame")
     if definition is None:
         definition = "created from Pandas"
     content = pd_df.to_numpy()
