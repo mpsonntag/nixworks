@@ -1,8 +1,6 @@
 import nixio as nix
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
-from matplotlib.widgets import Slider
 from PIL import Image as img
 
 
@@ -11,7 +9,7 @@ def create_1d_sampled(block):
     time = np.arange(500000) * dt
     data = np.random.randn(len(time)) * 0.1 + np.sin(2*np.pi*time) * \
         (np.sin(2 * np.pi * time * 0.0125) * 0.2)
-    da2 = block.create_data_array("long 1d data", "test",\
+    da2 = block.create_data_array("long 1d data", "test",
                                   dtype=nix.DataType.Double, data=data)
     da2.label = "intensity"
     da2.unit = "V"
@@ -23,7 +21,7 @@ def create_1d_sampled(block):
 def create_1d_range(block):
     times = np.linspace(0.0, 10., 25)
     values = np.sin(np.pi * 2 * times/2)
-    range_da = block.create_data_array("1-d range data", "test", \
+    range_da = block.create_data_array("1-d range data", "test",
                                        dtype=nix.DataType.Double, data=values)
     range_da.unit = "mV"
     range_da.label = "voltage"
@@ -35,19 +33,21 @@ def create_1d_range(block):
 def create_1d_event(block):
     times = np.linspace(0.0, 10., 25)
     times = times + np.random.randn(len(times)) * 0.05
-    alias_range_da = block.create_data_array("1d event data", "test", \
-                                             dtype=nix.DataType.Double, data=times)
+    alias_range_da = block.create_data_array("1d event data", "test",
+                                             dtype=nix.DataType.Double,
+                                             data=times)
     alias_range_da.append_alias_range_dimension()
     alias_range_da.label = "time"
     alias_range_da.unit = "ms"
 
 
 def create_1d_category(block):
-    months = np.arange(0.,12.,1.)
+    months = np.arange(0., 12., 1.)
     temperatures = np.sin(np.pi * 2 * months/12 + 7) * 25.
-    labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", \
-              "Oct", "Nov","Dec"]
-    set_data = block.create_data_array("1d set", "test", dtype=nix.DataType.Double, \
+    labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+              "Oct", "Nov", "Dec"]
+    set_data = block.create_data_array("1d set", "test",
+                                       dtype=nix.DataType.Double,
                                        data=temperatures)
     set_data.label = "temperature"
     set_data.unit = "K"
@@ -56,27 +56,28 @@ def create_1d_category(block):
 
 
 def create_2d_category(block):
-    months = np.arange(0.,12.,1.)
+    months = np.arange(0., 12., 1.)
     places = ["A", "B", "C"]
     temperatures = np.sin(np.pi * 2 * months/12 + 7) * 25.
     values = np.zeros((len(months), len(places)))
     for i in range(len(places)):
         values[:, i] = temperatures - 30 + i * 15
-    sets_da = block.create_data_array("2d set data", "test", \
-                                  dtype=nix.DataType.Double, \
-                                  data=values)
+    sets_da = block.create_data_array("2d set data", "test",
+                                      dtype=nix.DataType.Double,
+                                      data=values)
     sd = sets_da.append_set_dimension()
-    sd.labels = labels
+    sd.labels = months
     sd = sets_da.append_set_dimension()
     sd.labels = places
 
+
 def create_2d_sampled_set(block):
     dt = 0.001
-    data = np.zeros((10000,5))
+    data = np.zeros((10000, 5))
     time = np.arange(10000) * dt
     for i in range(5):
-        data[:,i] = np.sin(2*np.pi*time+np.random.randn(1)*np.pi)
-    da = block.create_data_array("2d sampled-set", "test", data=data, \
+        data[:, i] = np.sin(2*np.pi*time+np.random.randn(1)*np.pi)
+    da = block.create_data_array("2d sampled-set", "test", data=data,
                                  dtype=nix.DataType.Double)
     da.label = "voltage"
     da.unit = "mV"
@@ -91,8 +92,9 @@ def create_2d_range_set(block):
     values = np.random.randn(len(times), 5)
     for i in range(5):
         values[:, i] += np.linspace(0.0, 3.0 * i, len(times))
-    range_recordings = block.create_data_array("2d range data", "test", \
-                                               dtype=nix.DataType.Double, data=values)
+    range_recordings = block.create_data_array("2d range data", "test",
+                                               dtype=nix.DataType.Double,
+                                               data=values)
     rd = range_recordings.append_range_dimension(times)
     rd.unit = "s"
     rd.label = "time"
@@ -112,7 +114,8 @@ def create_2d_sampled_sampled(block):
     z2 = rv2.pdf(pos)
     z = z1 - z2
 
-    da = block.create_data_array("difference of Gaussians", "nix.2d.heatmap", data=z)
+    da = block.create_data_array("difference of Gaussians", "nix.2d.heatmap",
+                                 data=z)
     d1 = da.append_sampled_dimension(delta)
     d1.label = "x"
     d1.offset = -3.
@@ -136,7 +139,7 @@ def create_3d_image(block):
 
 def create_test_data():
     f = nix.File.open("test.nix", nix.FileMode.Overwrite)
-    b = f.create_block("test","test")
+    b = f.create_block("test", "test")
     create_1d_sampled(b)
     create_1d_range(b)
     create_1d_event(b)

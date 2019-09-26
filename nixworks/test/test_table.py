@@ -16,7 +16,7 @@ class TestTable(unittest.TestCase):
                [400, "sda98f23rb", 6.5, 2.3, 5]]
         self.df1 = self.block.create_data_frame("test df", "signal1",
                                                 data=arr, col_dict=di)
-        darr = [[1,2,3], [4,5,6]]
+        darr = [[1, 2, 3], [4, 5, 6]]
         self.da1 = self.block.create_data_array("test_da", "da1", data=darr)
 
     def tearDown(self):
@@ -26,4 +26,3 @@ class TestTable(unittest.TestCase):
         pd_df = table.write_to_pandas(self.file.blocks[0].data_frames[0])
         df_new = table.create_from_pandas(self.block, pd_df, "new_df")
         assert list(df_new[:]) == list(self.df1[:])
-
