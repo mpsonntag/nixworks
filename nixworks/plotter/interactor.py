@@ -1,11 +1,14 @@
-from .plotter import *
-
 from IPython import display
 from ipywidgets import interact
 import ipywidgets as widgets
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import numpy as np
+
 import nixio as nix
 from nixio import util
-import matplotlib.patches as patches
+
+from . import plotter as nixplt
 
 
 class Interactor:
@@ -30,18 +33,19 @@ class Interactor:
     def _check_da_combination(data_arrays):
         # checking if the DataArrays can be put in the same graph
         # Checks below not applicable to Images
-        if np.any([len(da.dimensions) > 2 and type(suggested_plotter(da))
-                   == ImagePlotter for da in data_arrays]):
+        if any(len(da.dimensions) > 2 and
+               type(nixplt.suggested_plotter(da)) == nixplt.ImagePlotter
+               for da in data_arrays):
             return True
 
         # Use first DataArray as benchmark
         u = data_arrays[0].unit
-        bd = guess_best_xdim(data_arrays[0])
+        bd = nixplt.guess_best_xdim(data_arrays[0])
 
         # Assume SetDimensions (bar charts) cannot be plotted with other graphs
         if isinstance(data_arrays[0].dimensions[bd], nix.SetDimension):
             for i, cda in enumerate(data_arrays):
-                bd = guess_best_xdim(data_arrays[0])
+                bd = nixplt.guess_best_xdim(data_arrays[0])
                 if not isinstance(cda.dimensions[bd], nix.SetDimension):
                     return False
         else:
@@ -50,7 +54,7 @@ class Interactor:
             dim_u = data_arrays[0].dimensions[bd].unit
             if not util.units.is_si(dim_u):
                 for i, cda in enumerate(data_arrays):
-                    bd = guess_best_xdim(cda)
+                    bd = nixplt.guess_best_xdim(cda)
                     if cda.dimensions[bd].unit != dim_u:
                         return False
             # Same check for unit as above but for the arrays themselves
@@ -60,7 +64,7 @@ class Interactor:
                         return False
             # Scalable units check if they are SI
             for i, cda in enumerate(data_arrays):
-                bd = guess_best_xdim(cda)
+                bd = nixplt.guess_best_xdim(cda)
                 if isinstance(cda.dimensions[bd], nix.SetDimension):
                     return False
                 if u and not util.units.scalable(cda.unit, u):
@@ -72,7 +76,7 @@ class Interactor:
 
     def _plot_da(self, data_arrays, maxpoints):
         '''
-        Function called in inteact_da to plot the graph in its initial state
+        Function called in interact_da to plot the graph in its initial state
 
         :param data_arrays: DataArrays to be plotted
         :type data_arrays: List of DataArrays
@@ -80,22 +84,21 @@ class Interactor:
         :type maxpoints: int
         :return: None
         '''
-        plotter_list = [suggested_plotter(d) for d in data_arrays]
+        plotter_list = [nixplt.suggested_plotter(d) for d in data_arrays]
 
         # Create mpl.axis for arrays one by one
         for a in plotter_list:
-            if isinstance(a, LinePlotter):
+            if isinstance(a, nixplt.LinePlotter):
                 a.plot(axis=self.ax, maxpoints=maxpoints)
             else:
                 a.plot(axis=self.ax)
             # Create common index for all plotted objects
             self._populate_artist(a)
         # Create legends if it is not a Image
-        if not np.any([isinstance(pl, ImagePlotter)
-                       for pl in plotter_list]):
-            xlabel = create_label(plotter_list[0].array.
-                                  dimensions[plotter_list[0].xdim])
-            ylabel = create_label(plotter_list[0].array)
+        if not any(isinstance(pl, nixplt.ImagePlotter) for pl in plotter_list):
+            xlabel = nixplt.create_label(plotter_list[0].array.
+                                         dimensions[plotter_list[0].xdim])
+            ylabel = nixplt.create_label(plotter_list[0].array)
             plt.xlabel(xlabel)
             plt.ylabel(ylabel)
 
@@ -151,8 +154,8 @@ class Interactor:
                 self.ax.legend().set_visible(True)
                 self.fig.canvas.draw_idle()
 
-        if not np.any([isinstance(pl, ImagePlotter)
-                       for pl in self.plotter_list]):
+        if not any(isinstance(pl, nixplt.ImagePlotter)
+                   for pl in self.plotter_list):
             legend_box = widgets.Checkbox(True, description='Legends')
             legend_box.observe(legend_visibility, names='value')
             display.display(legend_box)
@@ -205,7 +208,8 @@ class Interactor:
             y_start_slider.observe(change_y_start, names='value')
 
             def change_y_end(end):
-                start_point = y_start_slider.value * y_size / 1000 + ystart_offset
+                start_point = (y_start_slider.value * y_size / 1000 +
+                               ystart_offset)
                 end_point = end['new'] * y_size / 100 + ystart_offset
                 self.ax.set(ylim=(start_point, end_point))
                 self.fig.canvas.draw_idle()
@@ -268,8 +272,8 @@ class Interactor:
                     self.mpl_tag.remove()
                     self.mpl_tag = None
                 # For Images, tag will be shown in form of a rectangle
-                if np.any([isinstance(pl, ImagePlotter)
-                          for pl in self.plotter_list]):
+                if any(isinstance(pl, nixplt.ImagePlotter)
+                       for pl in self.plotter_list):
                     tagged = patches.Rectangle((tag.position[1],
                                                tag.position[0]), tag.extent[0],
                                                tag.extent[1], linewidth=1,
@@ -311,14 +315,14 @@ class Interactor:
         # Independent of Plotter type.
         # Easier to reach the Objects
         artist = []
-        if isinstance(plotter, LinePlotter):
+        if isinstance(plotter, nixplt.LinePlotter):
             artist.extend(plotter.lines)
-        elif isinstance(plotter, EventPlotter):
+        elif isinstance(plotter, nixplt.EventPlotter):
             artist.extend(plotter.sc)
-        elif isinstance(plotter, CategoryPlotter):
+        elif isinstance(plotter, nixplt.CategoryPlotter):
             for bar in plotter.bars:
                 artist.extend(bar.patches)
-        elif isinstance(plotter, ImagePlotter):
+        elif isinstance(plotter, nixplt.ImagePlotter):
             artist.append(plotter.image)
         else:
             raise TypeError("Invalid Plotter")
