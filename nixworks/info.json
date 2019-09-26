@@ -1,0 +1,10 @@
+{
+    "VERSION": "0.3b1",
+    "STATUS": "Release",
+    "RELEASE": "0.3b1",
+    "AUTHOR": "Christian Kellner, Jan Grewe, Chek Yin Choi",
+    "COPYRIGHT": "2019, German Neuroinformatics Node, Christian Kellner, Jan Grewe, Chek Yin Choi",
+    "CONTACT": "dev@g-node.org",
+    "BRIEF": "Python package with nix-helpers",
+    "HOMEPAGE": "https://github.com/G-Node/nixworks"
+}
