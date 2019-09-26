@@ -1,8 +1,9 @@
 import os
-import nixio as nix
+import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+import nixio as nix
 
 
 def guess_best_xdim(array):
@@ -80,7 +81,7 @@ def create_label(entity):
     label = ""
     if hasattr(entity, "label"):
         label += (entity.label if entity.label is not None else "")
-        if len(label) == 0 and  hasattr(entity, "name"):
+        if len(label) == 0 and hasattr(entity, "name"):
             label += entity.name
     if hasattr(entity, "unit") and entity.unit is not None:
         label += " [%s]" % entity.unit
@@ -96,7 +97,8 @@ class EventPlotter:
         if xdim == -1:
             self.xdim = guess_best_xdim(self.array)
         elif xdim > 1:
-            raise ValueError("EventPlotter: xdim is larger than 2! Cannot plot that kind of data")
+            raise ValueError("EventPlotter: xdim is larger than 2! "
+                             "Cannot plot that kind of data")
         else:
             self.xdim = xdim
 
@@ -116,8 +118,8 @@ class EventPlotter:
     def plot_1d(self):
         data = self.array[:]
         xlabel = create_label(self.array.dimensions[self.xdim])
-        if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Range and \
-           not self.array.dimensions[self.xdim].is_alias:
+        dim = self.array.dimensions[self.xdim]
+        if dim.dimension_type == nix.DimensionType.Range and not dim.is_alias:
             ylabel = create_label(self.array)
         else:
             ylabel = ""
@@ -138,7 +140,8 @@ class CategoryPlotter:
         if xdim == -1:
             self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
-            raise ValueError("CategoryPlotter: xdim is larger than 2! Cannot plot that kind of data")
+            raise ValueError("CategoryPlotter: xdim is larger than 2! "
+                             "Cannot plot that kind of data")
         else:
             self.xdim = xdim
 
@@ -159,16 +162,18 @@ class CategoryPlotter:
 
     def plot_1d(self):
         data = self.array[:]
-        if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Set:
-            categories = list(self.array.dimensions[self.xdim].labels)
+        dim = self.array.dimensions[self.xdim]
+        if dim.dimension_type == nix.DimensionType.Set:
+            categories = list(dim.labels)
         else:
             return None
         if categories is None:
-            categories = ["Cat-%i"%i for i in range(len(data))]
+            categories = ["Cat-%i" % i for i in range(len(data))]
         ylabel = create_label(self.array)
         if len(categories) == 0:
             raise ValueError("Cannot plot a bar chart without any labels")
-        self.bars.append(self.axis.bar(range(1, len(categories)+1), data, tick_label=categories))
+        self.bars.append(self.axis.bar(range(1, len(categories)+1), data,
+                                       tick_label=categories))
         self.axis.set_ylabel(ylabel)
         return self.axis
 
@@ -177,21 +182,27 @@ class CategoryPlotter:
         if self.xdim == 1:
             data = data.T
 
-        if self.array.dimensions[self.xdim].dimension_type == nix.DimensionType.Set:
-            categories = list(self.array.dimensions[self.xdim].labels)
+        dim = self.array.dimensions[self.xdim]
+        if dim.dimension_type == nix.DimensionType.Set:
+            categories = list(dim.labels)
         if len(categories) == 0:
-            categories = ["Cat-%i"%i for i in range(data.shape[self.xdim])]
+            categories = ["Cat-%i" % i for i in range(data.shape[self.xdim])]
 
-        if self.array.dimensions[1-self.xdim].dimension_type == nix.DimensionType.Set:
-            series_names = list(self.array.dimensions[1-self.xdim].labels)
+        dim = self.array.dimensions[1-self.xdim]
+        if dim.dimension_type == nix.DimensionType.Set:
+            series_names = list(dim.labels)
         if len(series_names) == 0:
-            series_names = ["Series-%i"%i for i in range(data.shape[1-self.xdim])]
+            series_names = ["Series-%i" % i
+                            for i in range(data.shape[1-self.xdim])]
 
         bar_width = 1/data.shape[1] * 0.75
         for i in range(data.shape[1]):
-            x_values = np.arange(data.shape[0]) +  i * bar_width
-            self.bars.append(self.axis.bar(x_values, data[:,i], width=bar_width, align="center")[0])
-        self.axis.set_xticks(np.arange(data.shape[0]) + data.shape[1] * bar_width/2)
+            x_values = np.arange(data.shape[0]) + i * bar_width
+            self.bars.append(self.axis.bar(x_values, data[:, i],
+                                           width=bar_width,
+                                           align="center")[0])
+        self.axis.set_xticks(np.arange(data.shape[0]) +
+                             data.shape[1] * bar_width/2)
         self.axis.set_xticklabels(categories)
         self.axis.legend(self.bars, series_names, loc=1)
         return self.axis
@@ -204,7 +215,7 @@ class ImagePlotter:
         self.image = None
 
     def plot(self, axis=None):
-        dim_count  = len(self.array.dimensions)
+        dim_count = len(self.array.dimensions)
         if axis is None:
             self.fig = plt.figure()
             self.axis = self.fig.add_axes([0.15, .2, 0.8, 0.75])
@@ -233,7 +244,8 @@ class ImagePlotter:
 
     def plot_3d(self):
         if self.array.shape[2] > 3:
-            print("cannot plot 3d data with more than 3 channels in the third dim")
+            print("cannot plot 3d data with more than 3 channels "
+                  "in the third dim")
             return None
         return self.plot_2d()
 
@@ -247,7 +259,8 @@ class LinePlotter:
         if xdim == -1:
             self.xdim = guess_best_xdim(self.array)
         elif xdim > 2:
-            raise ValueError("LinePlotter: xdim is larger than 2! Cannot plot that kind of data")
+            raise ValueError("LinePlotter: xdim is larger than 2! "
+                             "Cannot plot that kind of data")
         else:
             self.xdim = xdim
         self.fig = None
@@ -274,7 +287,8 @@ class LinePlotter:
     def __add_slider(self):
         steps = self.array.shape[self.xdim] / self.maxpoints
         slider_ax = self.fig.add_axes([0.15, 0.025, 0.8, 0.025])
-        self.slider = Slider(slider_ax, 'Slider', 1., steps, valinit=1., valstep=0.25)
+        self.slider = Slider(slider_ax, 'Slider', 1., steps, valinit=1.,
+                             valstep=0.25)
         self.slider.on_changed(self.__update)
 
     def __update(self, val):
@@ -298,7 +312,8 @@ class LinePlotter:
             end = self.array.shape[self.xdim]
 
         y = self.array[int(start):int(end)]
-        x = np.asarray(self.array.dimensions[self.xdim].axis(len(y), int(start)))
+        dim = self.array.dimensions[self.xdim]
+        x = np.asarray(dim.axis(len(y), int(start)))
 
         if len(self.lines) == 0:
             l, = self.axis.plot(x, y, label=self.array.name)
@@ -320,7 +335,7 @@ class LinePlotter:
         y_dimension = self.array.dimensions[1-self.xdim]
         labels = y_dimension.labels
         if len(labels) == 0:
-            labels =list(map(str, range(self.array.shape[1-self.xdim])))
+            labels = list(map(str, range(self.array.shape[1-self.xdim])))
 
         for i, l in enumerate(labels):
             if (self.xdim == 0):
@@ -363,8 +378,6 @@ def explore_file(dataset):
 
 
 def explore_block(block):
-    plot_array(block.data_arrays["V-1"])
-    return
     fig = plt.figure()
     ax = fig.add_subplot(111)
     arrays = {}
@@ -372,7 +385,7 @@ def explore_block(block):
         dim = guess_best_xdim(a)
         best_dim = a.dimensions[dim]
 
-        if dim > -1 and  best_dim.dimension_type != nix.DimensionType.Set:
+        if dim > -1 and best_dim.dimension_type != nix.DimensionType.Set:
             if best_dim.dimension_type == nix.DimensionType.Sample:
                 start = best_dim.position_at(0)
                 end = best_dim.position_at(a.data_extent[dim]-1)
@@ -381,17 +394,15 @@ def explore_block(block):
                 end = best_dim.tick_at(a.data_extent[dim]-1)
             arrays[a.name] = [(start, end)]
 
-
     for i, a in enumerate(arrays):
         ax.plot([arrays[a][0][0], arrays[a][0][1]], [i, i], lw=2.)
 
     tags = {}
-    for t in block.tags:
-        if len(t.references) == 0:
+    for tag in block.tags:
+        if len(tag.references) == 0:
             continue
-        dim = guess_buest_xdim(t.references[0])
-        tags[t.name] = [(tag.position[dim])]
-        pass
+        dim = guess_best_xdim(tag.references[0])
+        tags[tag.name] = [(tag.position[dim])]
     plt.show()
 
 
@@ -399,7 +410,6 @@ if __name__ == "__main__":
     testfile = os.path.join("..", "test", "test.nix")
     if not os.path.exists(testfile):
         cwd = os.curdir
-        import subprocess
         os.chdir("../test")
         subprocess.check_call(["python", "create_testfile.py"])
         os.chdir(cwd)
@@ -412,4 +422,3 @@ if __name__ == "__main__":
             p.plot()
             plt.show()
     f.close()
-
