@@ -88,7 +88,7 @@ def create_label(entity):
     return label
 
 
-class EventPlotter:
+class EventPlotter(object):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
@@ -132,7 +132,7 @@ class EventPlotter:
         return self.axis
 
 
-class CategoryPlotter:
+class CategoryPlotter(object):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
@@ -208,7 +208,7 @@ class CategoryPlotter:
         return self.axis
 
 
-class ImagePlotter:
+class ImagePlotter(object):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
@@ -250,7 +250,7 @@ class ImagePlotter:
         return self.plot_2d()
 
 
-class LinePlotter:
+class LinePlotter(object):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array

@@ -11,7 +11,7 @@ from nixio import util
 from . import plotter as nixplt
 
 
-class Interactor:
+class Interactor(object):
 
     def __init__(self):
         # Initialize a figure/ playground to plot interactive objects on
