@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import nixio as nix
-from nixio import util
 
 from . import plotter as nixplt
 
@@ -52,25 +51,25 @@ class Interactor(object):
             # In case dimension unit is not SI,
             # all arrays' best dimension should have exactly same unit strings
             dim_u = data_arrays[0].dimensions[bd].unit
-            if not util.units.is_si(dim_u):
+            if not nix.util.units.is_si(dim_u):
                 for i, cda in enumerate(data_arrays):
                     bd = nixplt.guess_best_xdim(cda)
                     if cda.dimensions[bd].unit != dim_u:
                         return False
             # Same check for unit as above but for the arrays themselves
-            if not util.units.is_si(u):
+            if not nix.util.units.is_si(u):
                 for i, cda in enumerate(data_arrays):
                     if cda.unit != u:
                         return False
             # Scalable units check if they are SI
             for i, cda in enumerate(data_arrays):
                 bd = nixplt.guess_best_xdim(cda)
+                scalable = nix.util.units.scalable
                 if isinstance(cda.dimensions[bd], nix.SetDimension):
                     return False
-                if u and not util.units.scalable(cda.unit, u):
+                if u and not scalable(cda.unit, u):
                     return False
-                if dim_u and not util.units.scalable(cda.dimensions[bd].unit,
-                                                     dim_u):
+                if dim_u and not scalable(cda.dimensions[bd].unit, dim_u):
                     return False
         return True
 
