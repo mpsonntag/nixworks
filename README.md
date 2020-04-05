@@ -15,6 +15,8 @@ The library contains converter tools to converter data between NIX and other neu
 - MEG and EEG analysis and visualisation: the [MNE analysis format](https://github.com/mne-tools/mne-python)
 - Neurodata without borders: the [NWB data format](https://www.nwb.org/)
 
+Both converters can be found in `nixworks/converters`. More information on both converters can be found in the `docs` folder.
+
 ## The NIX (Neuroscience information exchange) format
 
 The NIX data model allows to store fully annotated scientific datasets, i.e. the 
