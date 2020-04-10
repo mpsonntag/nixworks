@@ -7,8 +7,8 @@ The current conversion tool features two scripts that can be found in
 `nixworks/converters/nwb/nwb2nix.py`.
 
 The "easier" path, because NIX is a more generic data format than
-NWB. The script was build using a [data set][allan] from the Allan
-institute: [H19.28.012.11.05-2.nwb][allan-data].
+NWB. The script was built using a [data set][allen] from the Allen
+institute: [H19.28.012.11.05-2.nwb][allen-data].
 
 ## nix → nwb
 `nixworks/converters/nwb/nix2nwb.py`.
