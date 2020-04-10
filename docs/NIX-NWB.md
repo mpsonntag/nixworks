@@ -20,8 +20,8 @@ around a data set recorded with [relacs][relacs]. Since for the recording
 at hand there was no corresponding high level type in NWB, for now the
 generic `TimeSeries` data container was used.
 
-[allan]: http://download.alleninstitute.org/informatics-archive/prerelease/H19.28.012.11.05-2.nwb
-[allan-data]: http://download.alleninstitute.org/informatics-archive/prerelease/
+[allen]: http://download.alleninstitute.org/informatics-archive/prerelease/H19.28.012.11.05-2.nwb
+[allen-data]: http://download.alleninstitute.org/informatics-archive/prerelease/
 [relacs]: https://github.com/relacs/relacs
 [nix]: www.g-node.org/nix
 [nwb]: https://www.nwb.org/
