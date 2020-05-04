@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+This script converts an electrophysiology data set recorded by the Allen Institute
+and stored in the NWB data format to the NIX data format.
+"""
 
-import sys
-
+import argparse
 import dataclasses
 import datetime
-import argparse
-import nixio as nix
-import pynwb as nwb
+import sys
 
 from pathlib import Path
 
-import numpy as np
-import nixio as nix
-import pynwb as nwb
 import quantities as pq
+import nixio as nix
+import numpy as np
+import pynwb as nwb
 
 
 @dataclasses.dataclass
@@ -29,7 +30,7 @@ class Context:
     # current state
     group: nix.pycore.Group = None
 
-    #general groups
+    # general groups
     acq_group: nix.pycore.Group = None
 
     @property
@@ -39,57 +40,66 @@ class Context:
         return self.acq_group
 
 
-def convert_time_series(ctx: Context, obj: nwb.base.TimeSeries, typename='nwb.TimeSeries') -> nix.pycore.DataArray:
-    '''convert 'obj' from nix (nf) to nwb (fin)'''
+def convert_time_series(ctx: Context, obj: nwb.base.TimeSeries,
+                        typename='nwb.TimeSeries') -> nix.pycore.DataArray:
+    """
+    Convert 'obj' from nix (nf) to nwb (fin)
+    """
     data = obj.data
 
     arr = np.empty(data.shape, dtype=data.dtype)
     data.read_direct(arr)
 
-    da = ctx.block.create_data_array(obj.name, typename, shape=data.shape, data=arr)
-    da.unit = obj.unit
+    data_array = ctx.block.create_data_array(obj.name, typename, shape=data.shape, data=arr)
+    data_array.unit = obj.unit
 
     if obj.timestamps is not None:
         print('TODO')
     elif obj.rate > 0.0:
         stepsize = 1.0 / obj.rate
-        dim = da.append_sampled_dimension(stepsize)
+        dim = data_array.append_sampled_dimension(stepsize)
         dim.unit = "s"
         dim.label = "time"
         unit = obj.starting_time_unit
         if unit == 'Seconds':  # SI, eh?
             unit = 'second'
-        q = pq.Quantity(obj.starting_time, unit)
-        dim.offset = float(q.rescale(pq.sec))
+        quant = pq.Quantity(obj.starting_time, unit)
+        dim.offset = float(quant.rescale(pq.sec))
 
     if ctx.group is not None:
-        ctx.group.data_arrays.append(da)
+        ctx.group.data_arrays.append(data_array)
 
-    return da
+    return data_array
 
 
 def convert_voltage_clamp_series(ctx: Context, obj: nwb.icephys.VoltageClampSeries):
-    '''convert obj from nwb to nix'''
-    da = convert_time_series(ctx, obj, ' nwb.icephys.VoltageClampSeries')
+    """
+    Convert NWB voltage clamp series object to NIX
+    """
+    _ = convert_time_series(ctx, obj, ' nwb.icephys.VoltageClampSeries')
 
-    el = obj.electrode
+    electrode = obj.electrode
     recording = ctx.metadata
-    if el.name not in recording:
-        md = recording.create_section(el.name, 'Electrode')
+    if electrode.name not in recording:
+        metadata = recording.create_section(electrode.name, 'Electrode')
     else:
-        md = recording[el.name]
+        metadata = recording[electrode.name]
 
-    if el.description is not None:
-        md['Description'] = el.description
+    if electrode.description is not None:
+        metadata['Description'] = electrode.description
 
 
 def convert_current_clamp_series(ctx: Context, obj: nwb.icephys.CurrentClampSeries):
-    '''convert obj from nwb to nix'''
-    da = convert_time_series(ctx, obj, ' nwb.icephys.CurrentClampSeries')
+    """
+    Convert NWB current clamp series object to NIX
+    """
+    _ = convert_time_series(ctx, obj, ' nwb.icephys.CurrentClampSeries')
 
 
 def main():
-    '''main entry point'''
+    """
+    Main entry point
+    """
     parser = argparse.ArgumentParser(description='nwb2nix')
     parser.add_argument('-v', '--version', action='store_true', default=False)
     parser.add_argument('FILE', type=str)
@@ -100,22 +110,22 @@ def main():
         print(f"NWB: {nwb.__version__}")
         sys.exit(0)
 
-    p = Path(args.FILE).resolve()
-    print(f"Loading {p}", file=sys.stderr)
+    nwb_file_path = Path(args.FILE).resolve()
+    print(f"Loading {nwb_file_path}", file=sys.stderr)
 
-    f = nwb.NWBHDF5IO(str(p), 'r')
-    fin = f.read()
+    nwb_file = nwb.NWBHDF5IO(str(nwb_file_path), 'r')
+    fin = nwb_file.read()
 
-    basename = p.stem
-    nf = nix.File.open(basename + '.nix', nix.FileMode.Overwrite)
-    block = nf.create_block(basename, 'nwb.file')
+    basename = nwb_file_path.stem
+    nix_file = nix.File.open(basename + '.nix', nix.FileMode.Overwrite)
+    block = nix_file.create_block(basename, 'nwb.file')
 
-    md = nf.create_section(basename, 'recording')
-    ctx = Context(nf=nf, ip=fin, block=block, metadata=md)
+    metadata = nix_file.create_section(basename, 'recording')
+    ctx = Context(nf=nix_file, ip=fin, block=block, metadata=metadata)
 
     sst = fin.session_start_time.astimezone(datetime.timezone.utc)
 
-    recording = md.create_section('Recording', 'Recording')
+    recording = metadata.create_section('Recording', 'Recording')
     recording['Date'] = sst.date().isoformat()
     recording['Time'] = sst.time().isoformat()
     recording['TimeZone'] = 'UTC'
