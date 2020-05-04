@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 from setuptools import setup
 
 with open('README.md') as f:
@@ -7,6 +8,11 @@ with open('README.md') as f:
 
 with open('LICENSE') as f:
     license_text = f.read()
+
+extras_require = {
+    "mne": "mne>=0.20.3",
+    "nwb": "pynwb>=1.3.0"
+}
 
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -44,6 +50,7 @@ setup(
     test_suite='pytest',
     setup_requires=['pytest-runner'],
     install_requires=['nixio'],
+    extras_require=extras_require,
     package_data={'nixworks': [license_text, description_text]},
     include_package_data=True,
     zip_safe=False,
