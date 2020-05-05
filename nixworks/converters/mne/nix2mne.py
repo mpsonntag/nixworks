@@ -18,11 +18,11 @@ the mne2nix.py module for details.
 
 To include in a script, call the 'import_nix()' and provide a NIX filename.
 """
-import os
 import sys
-import numpy as np
-import nixio as nix
+
 import mne
+import nixio as nix
+import numpy as np
 
 
 DATA_BLOCK_NAME = "EEG Data Block"
@@ -32,7 +32,7 @@ RAW_DATA_GROUP_TYPE = "EEG Channels"
 RAW_DATA_TYPE = "Raw Data"
 
 
-typemap = {
+TYPE_MAP = {
     "str": str,
     "int": int,
     "float": float,
@@ -45,37 +45,37 @@ typemap = {
 
 
 def convert_prop_type(prop):
-    pt = prop.type[8:-2]
-    pv = prop.values
-    if len(pv) == 1:
-        pv = pv[0]
+    prop_type = prop.type[8:-2]
+    prop_val = prop.values
+    if len(prop_val) == 1:
+        prop_val = prop_val[0]
 
-    return typemap[pt](pv)
+    return TYPE_MAP[prop_type](prop_val)
 
 
 def md_to_dict(section):
-    sdict = dict()
+    s_dict = dict()
     for prop in section.props:
-        sdict[prop.name] = convert_prop_type(prop)
+        s_dict[prop.name] = convert_prop_type(prop)
 
     if section.type[8:-2] == "mne.transforms.Transform":
-        to = sdict["to"]
-        fro = sdict["from"]
-        trans = sdict["trans"]
+        to = s_dict["to"]
+        fro = s_dict["from"]
+        # trans = s_dict["trans"]
         trans = section.referring_data_arrays[0][:]
         return mne.Transform(fro=fro, to=to, trans=trans)
 
     for sec in section.sections:
         if sec.name == "chs":
             # make a list of dictionaries for the channels
-            chlist = list()
-            for chsec in sec.sections:
-                chlist.append(md_to_dict(chsec))
-                sdict[sec.name] = chlist
+            chan_list = list()
+            for chan_sec in sec.sections:
+                chan_list.append(md_to_dict(chan_sec))
+                s_dict[sec.name] = chan_list
         else:
-            sdict[sec.name] = md_to_dict(sec)
+            s_dict[sec.name] = md_to_dict(sec)
 
-    return sdict
+    return s_dict
 
 
 def merge_data_arrays(arrays):
@@ -88,8 +88,8 @@ def create_mne_annotations(mtags):
     duration = list()
     description = list()
     for mtag in mtags:
-        posshape = mtag.positions.shape
-        if len(posshape) == 1:
+        pos_shape = mtag.positions.shape
+        if len(pos_shape) == 1:
             onset.extend(mtag.positions)
             duration.extend(mtag.extents)
         else:
@@ -103,57 +103,57 @@ def create_mne_annotations(mtags):
                            description=description)
 
 
-def import_nix(nixfilename):
+def import_nix(nix_filename):
     """
     Import a NIX file (generated with mne2nix.py) into an MNE Raw structure.
 
-    :param nixfilename: Path to the NIX file to be loaded.
+    :param nix_filename: Path to the NIX file to be loaded.
     :rtype: mne.io.RawArray
     """
-    nixfile = nix.File(nixfilename, mode=nix.FileMode.ReadOnly)
+    nix_file = nix.File(nix_filename, mode=nix.FileMode.ReadOnly)
 
-    # root, ext = os.path.splitext(nixfilename)
+    # root, ext = os.path.splitext(nix_filename)
     # bvfilename = root + os.extsep + "vhdr"
     # bvfile = mne.io.read_raw_brainvision(bvfilename, stim_channel=False)
 
     # Create MNE Info object
-    infosec = nixfile.sections["Info"]
-    nchan = infosec["nchan"]
-    sfreq = infosec["sfreq"]
-    info = mne.create_info(nchan, sfreq)
+    info_sec = nix_file.sections["Info"]
+    n_chan = info_sec["nchan"]
+    s_freq = info_sec["sfreq"]
+    info = mne.create_info(n_chan, s_freq)
 
-    nixinfodict = md_to_dict(infosec)
-    info.update(nixinfodict)
+    nix_info_dict = md_to_dict(info_sec)
+    info.update(nix_info_dict)
 
     # Read raw data into MNE objects
-    datagroup = nixfile.blocks[DATA_BLOCK_NAME].groups[RAW_DATA_GROUP_NAME]
-    if len(datagroup.data_arrays) > 1:
+    data_group = nix_file.blocks[DATA_BLOCK_NAME].groups[RAW_DATA_GROUP_NAME]
+    if len(data_group.data_arrays) > 1:
         # Data split: One DataArray per channel.  Merging
-        nixrawdata = merge_data_arrays(datagroup.data_arrays)
+        nix_raw_data = merge_data_arrays(data_group.data_arrays)
     else:
-        nixrawdata = datagroup.data_arrays[0][:]
+        nix_raw_data = data_group.data_arrays[0][:]
 
     # Create MNE RawArray
-    mnerawdata = mne.io.RawArray(nixrawdata, info)
+    mne_raw_data = mne.io.RawArray(nix_raw_data, info)
 
     # Add annotations: Stimuli from MultiTags
-    mtags = datagroup.multi_tags
+    mtags = data_group.multi_tags
     annotations = create_mne_annotations(mtags)
 
-    mnerawdata.set_annotations(annotations)
+    mne_raw_data.set_annotations(annotations)
 
-    nixfile.close()
+    nix_file.close()
 
-    return mnerawdata
+    return mne_raw_data
 
 
 def main():
     if len(sys.argv) < 2:
-        print("Please provide either a NIX filename as the first argument")
+        print("Please provide a NIX filename as the first argument")
         sys.exit(1)
 
-    nixfilename = sys.argv[1]
-    import_nix(nixfilename)
+    nix_filename = sys.argv[1]
+    import_nix(nix_filename)
 
 
 if __name__ == "__main__":
