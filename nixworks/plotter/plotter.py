@@ -88,7 +88,13 @@ def create_label(entity):
     return label
 
 
-class EventPlotter(object):
+class Plotter(object):
+
+    def show(self):
+        plt.show()
+
+
+class EventPlotter(Plotter):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
@@ -132,7 +138,7 @@ class EventPlotter(object):
         return self.axis
 
 
-class CategoryPlotter(object):
+class CategoryPlotter(Plotter):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
@@ -157,7 +163,7 @@ class CategoryPlotter(object):
             return self.plot_1d()
         elif len(self.array.dimensions) == 2:
             return self.plot_2d()
-        else:
+        else:       
             return None
 
     def plot_1d(self):
@@ -208,7 +214,7 @@ class CategoryPlotter(object):
         return self.axis
 
 
-class ImagePlotter(object):
+class ImagePlotter(Plotter):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
@@ -250,7 +256,7 @@ class ImagePlotter(object):
         return self.plot_2d()
 
 
-class LinePlotter(object):
+class LinePlotter(Plotter):
 
     def __init__(self, data_array, xdim=-1):
         self.array = data_array
@@ -420,5 +426,5 @@ if __name__ == "__main__":
         p = suggested_plotter(da)
         if p is not None:
             p.plot()
-            plt.show()
+            p.show()
     f.close()
